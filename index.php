@@ -17,14 +17,16 @@ $results = []; // ⭐️ เตรียม array สำหรับเก็บ
 // --- START: ดึงข้อมูลสำหรับ Dashboard ที่จะส่งให้ learning_group_chart.php ---
 // ⭐️ SQL สำหรับดึงข้อมูลจำนวนครูที่ถูกนิเทศในแต่ละกลุ่มสาระฯ
 $sql_lg_supervision = "
-    SELECT 
-        t.learning_group,
+    SELECT
+        vtcg.core_learning_group AS learning_group,
         COUNT(DISTINCT ss.teacher_t_pid) AS supervised_teacher_count
-    FROM supervision_sessions ss
-    JOIN teacher t ON ss.teacher_t_pid = t.t_pid
-    WHERE t.learning_group IS NOT NULL AND t.learning_group != ''
-    GROUP BY t.learning_group
-    ORDER BY supervised_teacher_count DESC;
+    FROM
+        supervision_sessions ss
+    JOIN
+        view_teacher_core_groups vtcg ON ss.teacher_t_pid = vtcg.t_pid
+    WHERE vtcg.core_learning_group IS NOT NULL AND vtcg.core_learning_group COLLATE utf8mb4_unicode_ci != ''
+    GROUP BY vtcg.core_learning_group
+    ORDER BY supervised_teacher_count DESC
 ";
 
 $lg_supervision_data = []; // กำหนดค่าเริ่มต้นเป็น array ว่าง
