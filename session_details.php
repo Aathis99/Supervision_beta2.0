@@ -137,10 +137,9 @@ $conn->close();
                                     <td>
                                         <?php // ปุ่มดูรายงาน 
                                         ?>
-                                        <form method="POST" action="supervision_report.php" style="display:inline;">
-                                            <input type="hidden" name="session_id" value="<?php echo $row['session_id']; ?>">
-                                            <button type="submit" class="btn btn-sm btn-primary" title="ดูรายงานผลการนิเทศ"><i class="fas fa-file-alt"></i> ดูรายงาน</button>
-                                        </form>
+                                        <a href="supervision_report.php?session_id=<?php echo $row['session_id']; ?>" class="btn btn-sm btn-primary" title="ดูรายงานผลการนิเทศ">
+                                            <i class="fas fa-file-alt"></i> ดูรายงาน
+                                        </a>
                                     </td>
                                     <?php if (!$is_supervisor): // ⭐️ ถ้าไม่ใช่ผู้นิเทศ ให้แสดงคอลัมน์ประเมิน 
                                     ?>

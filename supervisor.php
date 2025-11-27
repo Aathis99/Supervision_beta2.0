@@ -22,7 +22,7 @@
             <div class="card-body">
                 <h5 class="card-title fw-bold">ข้อมูลผู้นิเทศ</h5>
                 <hr>
-                <input type="hidden" id="supervisor_id" name="supervisor_pid">
+                <input type="hidden" id="supervisor_id" name="s_p_id">
                 
                 <div class="row g-3">
                     

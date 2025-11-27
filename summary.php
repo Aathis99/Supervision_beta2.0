@@ -18,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // ⭐️ หากเลือก 'policy_form' ให้บันทึกข้อมูลลง DB แล้วไปหน้า history.php
         if ($selected_form === 'policy_form') {
             // ดึงข้อมูล p_id และ t_pid จาก POST
-            $p_id = $_POST['s_p_id'] ?? null; // ⭐️ แก้ไข: เปลี่ยนจาก p_id เป็น s_p_id ให้ตรงกับฟอร์ม
+            $p_id = $_POST['s_p_id'] ?? null; // s_p_id ถูกต้องอยู่แล้ว
             $t_pid = $_POST['t_pid'] ?? null; // t_pid ถูกต้องอยู่แล้ว
 
             if ($p_id && $t_pid) {

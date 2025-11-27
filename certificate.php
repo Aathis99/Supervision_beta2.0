@@ -156,22 +156,22 @@ $pdf->SetTextColor(0, 0, 51);
 
 // --- ส่วนที่ 0: เลขที่อ้างอิง (Reference Number) ---
 // สร้างเลขที่อ้างอิงตามรูปแบบที่ต้องการ
-$ref_prefix = 'เลขที่.';
+$ref_prefix = 'ศน.';
 $ref_running_no = toThaiNumber(str_pad($certificate_running_no, 4, '0', STR_PAD_LEFT));
 $ref_year = toThaiNumber((int)date('Y', strtotime($session['supervision_date'])) + 543);
 $reference_number = "{$ref_prefix}{$ref_running_no}/{$ref_year}";
 
 // ตั้งค่า Font และตำแหน่งสำหรับเลขที่อ้างอิง (มุมขวาบน)
-$pdf->SetFont('thsarabun', '', 16);
+$pdf->SetFont('thsarabun', '', 22);
 // SetXY(x, y) -> x: ระยะห่างจากขอบซ้าย, y: ระยะห่างจากขอบบน
-$pdf->SetXY(250, 11); 
+$pdf->SetXY(241, 11); 
 $pdf->Cell(0, 0, '' . $reference_number, 0, 1, 'L');
 
 // --- ส่วนที่ 1: ชื่อครู (Teacher Name) ---
 // ปรับตำแหน่ง Y (แนวตั้ง) ตรงนี้: ยิ่งเลขมาก ยิ่งลงมาข้างล่าง
 // จากรูปเกียรติบัตร พื้นที่ว่างน่าจะอยู่ประมาณ 75-85 มม. จากขอบบน
 $pdf->SetFont('thsarabun', '', 34); // ปรับขนาดตัวอักษรตรงนี้ (B = ตัวหนา)
-$pdf->SetY(90);  
+$pdf->SetY(80);  
 // Cell(width, height, text, border, ln, align) -> Align 'C' คือจัดกึ่งกลางหน้ากระดาษอัตโนมัติ
 $pdf->Cell(0, 0, $teacher_name, 0, 1, 'C', 0, '', 0);
 

@@ -20,8 +20,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $s_data = $_SESSION['inspection_data'];
 
     // รับข้อมูลพื้นฐาน
-    $supervisor_p_id = $s_data['s_p_id'] ?? '';  // แก้จาก supervisor_p_id เป็น s_p_id
-    $teacher_t_pid   = $s_data['t_pid'] ?? '';
+    $supervisor_p_id = $s_data['s_p_id'] ?? '';  // ⭐️ FIX: แก้ไข Key ให้ตรงกับที่ส่งมาจากฟอร์ม supervisor.php
+    $teacher_t_pid   = $s_data['t_pid'] ?? '';          // t_pid ถูกต้องอยู่แล้ว
 
     // ⭐️ FIX: รับข้อมูลการนิเทศจาก $_POST โดยตรง (เพราะถูกกรอกในฟอร์ม)
     $subject_code    = trim($_POST['subject_code'] ?? '');
@@ -145,8 +145,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
-        // เปลี่ยนเส้นทางไปยังหน้าประวัติเพื่อแสดงข้อมูลทั้งหมด
-        header("Location: history.php");
+        // เปลี่ยนเส้นทางไปยังหน้ารายงานของ session ที่เพิ่งสร้าง
+        header("Location: supervision_report.php?session_id=" . $session_id);
         exit();
 
     } catch (Exception $e) {
