@@ -15,36 +15,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $selected_form = $_POST['evaluation_type'] ?? null;
 
-        // ⭐️ หากเลือก 'policy_form' ให้บันทึกข้อมูลลง DB แล้วไปหน้า history.php
-        if ($selected_form === 'policy_form') {
-            // ดึงข้อมูล p_id และ t_pid จาก POST
-            $p_id = $_POST['s_p_id'] ?? null; // s_p_id ถูกต้องอยู่แล้ว
-            $t_pid = $_POST['t_pid'] ?? null; // t_pid ถูกต้องอยู่แล้ว
-
-            if ($p_id && $t_pid) {
-                // ⭐️ ตั้งค่าโซนเวลาเป็นของประเทศไทย
-                date_default_timezone_set('Asia/Bangkok');
-                $supervision_date = date('Y-m-d H:i:s');
-
-                // เตรียม SQL Statement
-                $stmt = $conn->prepare("INSERT INTO quick_win (p_id, t_id, supervision_date) VALUES (?, ?, ?)");
-                // ⭐️ แก้ไข: เปลี่ยนประเภทข้อมูลจาก "sss" เป็น "iis" ให้ตรงกับชนิดข้อมูลในฐานข้อมูล (integer, integer, string)
-                $stmt->bind_param("iis", $p_id, $t_pid, $supervision_date);
-
-                if ($stmt->execute()) {
-                    // บันทึกสำเร็จ: ตั้งค่า session สำหรับแจ้งเตือนและ redirect
-                    $_SESSION['flash_message'] = "บันทึกข้อมูลเสร็จสิ้น";
-                    header("Location: history.php");
-                    exit();
-                } else {
-                    // บันทึกล้มเหลว
-                    $error_message = "เกิดข้อผิดพลาดในการบันทึกข้อมูล: " . $stmt->error;
-                }
-                $stmt->close();
-            } else {
-                // ข้อมูล p_id หรือ t_pid ไม่ครบ
-                $error_message = "ข้อมูลผู้นิเทศหรือผู้รับนิเทศไม่สมบูรณ์ ไม่สามารถบันทึกได้";
-            }
+        // ตรวจสอบการเลือกฟอร์มและ redirect ไปยังหน้าที่ถูกต้อง
+        if ($selected_form === 'quickwin_form') {
+            // ถ้าเลือก Quick Win Form ให้ไปที่หน้า quickwin_form.php
+            header("Location: forms/quickwin_form.php");
+            exit();
+        } elseif ($selected_form === 'kpi_form') {
+            // ถ้าเลือก KPI Form ให้แสดงผลในหน้านี้ต่อไป (ไม่ต้องทำอะไร)
         } elseif ($selected_form !== 'kpi_form') {
             // กรณีไม่ได้เลือกฟอร์มใดๆ หรือค่าไม่ถูกต้อง
             $error_message = 'กรุณาเลือกแบบฟอร์มที่ต้องการดำเนินการ';
@@ -83,7 +60,7 @@ if (!$inspection_data) {
             <?php if ($error_message !== ''): ?>
                 <div class="alert alert-danger text-center">
                     <p><?php echo $error_message; ?></p>
-                    <a href="supervision_start.php" class="btn btn-danger">ไปยังแบบฟอร์มเริ่มต้น</a>
+                    <a href="index.php" class="btn btn-danger">ไปยังแบบฟอร์มเริ่มต้น</a>
                 </div>
             <?php else: ?>
                 <?php

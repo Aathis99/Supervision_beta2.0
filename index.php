@@ -1,4 +1,3 @@
-
 <?php
 session_start(); // ⭐️ เริ่มต้น session เพื่อใช้งาน $_SESSION
 require_once 'config/db_connect.php'; // ⭐️ เรียกใช้ไฟล์เชื่อมต่อฐานข้อมูล
@@ -14,6 +13,39 @@ if (!isset($_SESSION['visited'])) {
 // รับค่าการค้นหา (ถ้ามี)
 $search_name = $_GET['search_name'] ?? '';
 $results = []; // ⭐️ เตรียม array สำหรับเก็บผลลัพธ์
+
+// --- START: ดึงข้อมูลสำหรับ Dashboard ที่จะส่งให้ learning_group_chart.php ---
+// ⭐️ SQL สำหรับดึงข้อมูลจำนวนครูที่ถูกนิเทศในแต่ละกลุ่มสาระฯ
+$sql_lg_supervision = "
+    SELECT 
+        t.learning_group,
+        COUNT(DISTINCT ss.teacher_t_pid) AS supervised_teacher_count
+    FROM supervision_sessions ss
+    JOIN teacher t ON ss.teacher_t_pid = t.t_pid
+    WHERE t.learning_group IS NOT NULL AND t.learning_group != ''
+    GROUP BY t.learning_group
+    ORDER BY supervised_teacher_count DESC;
+";
+
+$lg_supervision_data = []; // กำหนดค่าเริ่มต้นเป็น array ว่าง
+$result_lg = $conn->query($sql_lg_supervision);
+if ($result_lg) {
+    $lg_supervision_data = $result_lg->fetch_all(MYSQLI_ASSOC);
+}
+
+// เตรียมข้อมูลสำหรับ Chart.js
+$lg_chart_labels = json_encode(array_column($lg_supervision_data, 'learning_group'));
+$lg_chart_values = json_encode(array_column($lg_supervision_data, 'supervised_teacher_count'));
+
+// 🎨 กำหนดสีใน PHP เพื่อใช้ในกราฟ
+$background_colors = [
+    'rgba(255, 193, 7, 0.7)', 'rgba(23, 162, 184, 0.7)', 'rgba(40, 167, 69, 0.7)',
+    'rgba(108, 117, 125, 0.7)', 'rgba(220, 53, 69, 0.7)', 'rgba(75, 192, 192, 0.7)',
+    'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)', 'rgba(46, 204, 113, 0.7)',
+    'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)'
+];
+$js_background_colors = json_encode($background_colors);
+// --- END: ดึงข้อมูลสำหรับ Dashboard ---
 
 // SQL พื้นฐานสำหรับดึงข้อมูล
 // ⭐️ ดึงข้อมูลที่จำเป็นตามภาพ: วันที่, ชื่อครู, โรงเรียน, ชื่อผู้นิเทศ, รายวิชา, เวลา, ปุ่มดูรายงาน
@@ -56,7 +88,10 @@ if (!empty($search_name)) {
 
 // ⭐️ เรียงลำดับจากวันที่ล่าสุด ⭐️
 $sql .= " ORDER BY latest_sessions.max_date DESC";
-
+// ⭐️ เพิ่มเงื่อนไข: ถ้าไม่มีการค้นหา ให้แสดงแค่ 5 รายการล่าสุด
+if (empty($search_name)) {
+    $sql .= " LIMIT 5";
+}
 
 // เตรียมและดำเนินการสอบถาม
 $stmt = $conn->prepare($sql);
@@ -85,6 +120,9 @@ $conn->close();
     <title>ประวัติการนิเทศ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- ⭐️ เพิ่ม Chart.js และ Datalabels Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <link rel="stylesheet" href="css/styles.css">
     <style>
         /* สไตล์สำหรับตาราง (เพื่อให้อ่านง่ายขึ้น) */
@@ -102,14 +140,33 @@ $conn->close();
 
 <body>
     <div class="container mt-5">
-        <div class="card shadow-lg p-4">
-            <h2 class="card-title text-center mb-4"><i class="fas fa-history"></i> ประวัติการนิเทศ</h2>
 
-            <form method="GET" action="index.php" class="mb-4">
+        <div class="card shadow-lg p-4">
+            <!-- ⭐️ ช่องสำหรับใส่ภาพ Banner ⭐️ -->
+            <div class="text-center mb-4">
+                <!-- ❗️❗️ ให้เปลี่ยน src เป็น path หรือ URL ของรูปภาพ Banner ที่ต้องการ ❗️❗️ -->
+                <img src="images\banner001.jpg" class="img-fluid rounded" alt="แบนเนอร์ประวัติการนิเทศ">
+            </div>
+            
+            <!-- ⭐️ ส่วนของ Dashboard ที่เพิ่มเข้ามา -->
+            
+            <div class="row mb-5">
+                <div class="col-12">
+                    <?php 
+                    // ตรวจสอบว่ามีข้อมูลสำหรับแสดงกราฟหรือไม่ ก่อนที่จะ include
+                    if (!empty($lg_supervision_data)) {
+                        include 'graphs/learning_group_chart.php'; 
+                    }
+                    ?>
+                </div>
+            </div>
+           
+
+            <form method="GET" action="index.php#search-results" class="mb-4" id="search-form">
                 <div class="input-group">
                     <input type="text" class="form-control" placeholder="ค้นหาด้วยชื่อครู หรือ ตำแหน่ง..." name="search_name" value="<?php echo htmlspecialchars($search_name); ?>">
                     <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i> ค้นหา</button>
-                    <a href="index.php" class="btn btn-secondary" title="แสดงรายการทั้งหมด">
+                    <a href="index.php#search-results" class="btn btn-secondary" title="แสดงรายการทั้งหมด">
                         <i class="fas fa-redo"></i>
                     </a>
                 </div>
@@ -138,7 +195,7 @@ $conn->close();
                 </div>
             <?php endif; ?>
 
-            <div class="table-responsive">
+            <div class="table-responsive" id="search-results">
                 <table class="table table-striped table-hover table-custom align-middle">
                     <thead>
                         <tr>
@@ -187,6 +244,10 @@ $conn->close();
 
     <script>
         // ⭐️ เพิ่ม script สำหรับแสดง popup แจ้งเตือน
+        // และลงทะเบียน Datalabels Plugin ให้ Chart.js รู้จัก
+        Chart.register(ChartDataLabels);
+
+
         document.addEventListener('DOMContentLoaded', function() {
             <?php
             if (isset($_SESSION['flash_message'])) {

@@ -75,7 +75,6 @@ if ($form_type == 3) {
     $sql_lg = "SELECT core_learning_group AS learning_group, COUNT(*) AS supervised_teacher_count FROM view_quick_win_dashboard_all_events WHERE core_learning_group IS NOT NULL AND core_learning_group COLLATE utf8mb4_unicode_ci != '' GROUP BY core_learning_group ORDER BY supervised_teacher_count DESC";
     $result_lg = $conn->query($sql_lg);
     if ($result_lg) $lg_supervised_teacher_data = $result_lg->fetch_all(MYSQLI_ASSOC);
-
 } else {
     // สำหรับ Form 1: ดึงข้อมูลสรุปจากตาราง supervision_sessions
     // 1. สรุปรายโรงเรียน
@@ -195,24 +194,29 @@ $js_background_colors = json_encode($background_colors);
             background-position: center center;
             background-attachment: fixed;
             /* Fallback color in case the image fails to load */
-            background-color: #f8f9fa; 
+            background-color: #f8f9fa;
         }
+
         .card-header-custom {
-            background-color: #17a2b8; /* Bootstrap info color */
+            background-color: #17a2b8;
+            /* Bootstrap info color */
             color: white;
         }
+
         /* ⭐️ สไตล์สำหรับคำอธิบายสัญลักษณ์ที่สร้างเอง */
         .custom-legend .legend-item {
             display: flex;
             align-items: center;
             margin-bottom: 0.5rem;
         }
+
         .custom-legend .legend-color-box {
             width: 20px;
             height: 20px;
             margin-right: 10px;
             border: 1px solid #ddd;
         }
+
         /* เพิ่มระยะห่างระหว่างการ์ด */
         .chart-card {
             margin-top: 1.5rem;
@@ -225,7 +229,6 @@ $js_background_colors = json_encode($background_colors);
     <div class="container mt-5">
         <?php
         ?>
-        <h1 class="text-center mb-4">Dashboard สรุปผลการนิเทศ</h1>
 
         <!-- Dropdown สำหรับเลือกฟอร์ม -->
         <div class="row justify-content-center mb-4">
@@ -239,19 +242,27 @@ $js_background_colors = json_encode($background_colors);
                 </div>
             </div>
         </div>
-
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> กลับ
+            </a>
+            <h1 class="text-center mb-0 flex-grow-1">Dashboard สรุปผลการนิเทศ</h1>
+            <!-- <a href="../index.php" class="btn btn-outline-primary"><i class="fas fa-home"></i> หน้าหลัก</a> -->
+        </div>
         <!-- แถวที่ 1: กราฟหลักตามฟอร์มที่เลือก -->
         <?php if ($form_type == 1): ?>
             <div class="row">
                 <div class="col-lg-12 chart-card">
-                    <?php $dashboard_data = $satisfaction_data; include 'satisfaction_pie_chart.php'; ?>
+                    <?php $dashboard_data = $satisfaction_data;
+                    include 'satisfaction_pie_chart.php'; ?>
                 </div>
             </div>
         <?php elseif ($form_type == 3): ?>
             <div class="row">
                 <div class="col-lg-12 chart-card">
                     <?php /* ส่งข้อมูลไปที่ไฟล์ใหม่ */ ?>
-                    <?php $dashboard_data = $satisfaction_data; include 'quick_win_chart.php'; ?>
+                    <?php $dashboard_data = $satisfaction_data;
+                    include 'quick_win_chart.php'; ?>
                 </div>
             </div>
         <?php endif; ?>
@@ -263,7 +274,8 @@ $js_background_colors = json_encode($background_colors);
         <!-- แถวที่ 2: กราฟกลุ่มสาระ -->
         <div class="row">
             <div class="col-lg-12 chart-card">
-                <?php $lg_supervision_data = $lg_supervised_teacher_data; include 'learning_group_chart.php'; ?>
+                <?php $lg_supervision_data = $lg_supervised_teacher_data;
+                include 'learning_group_chart.php'; ?>
             </div>
         </div>
 
@@ -287,5 +299,6 @@ $js_background_colors = json_encode($background_colors);
         Chart.register(ChartDataLabels);
     </script>
 </body>
+
 </html>
-        ?>
+?>

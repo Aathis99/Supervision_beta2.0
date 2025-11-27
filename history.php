@@ -53,6 +53,10 @@ if (!empty($search_name)) {
 // ⭐️ เรียงลำดับจากวันที่ล่าสุด ⭐️
 $sql .= " ORDER BY latest_sessions.max_date DESC";
 
+// ⭐️ จำกัดผลลัพธ์ให้แสดง 5 รายการล่าสุดเฉพาะเมื่อไม่ได้ค้นหา ⭐️
+if (empty($search_name)) {
+    $sql .= " LIMIT 5";
+}
 
 // เตรียมและดำเนินการสอบถาม
 $stmt = $conn->prepare($sql);

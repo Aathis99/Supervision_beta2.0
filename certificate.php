@@ -12,10 +12,13 @@ $session_id = $_POST['session_id'];
 // ดึงข้อมูล session
 $sql = "SELECT s.*, 
                CONCAT(t.PrefixName, '' , t.fname, ' ', t.lname) AS teacher_full_name, 
-               CONCAT(sp.PrefixName, '  ', sp.fname, ' ', sp.lname) AS supervisor_full_name
+               CONCAT(sp.PrefixName, '  ', sp.fname, ' ', sp.lname) AS supervisor_full_name,
+               t.adm_name,
+               sc.SchoolName
         FROM supervision_sessions s
         LEFT JOIN teacher t ON s.teacher_t_pid = t.t_pid
         LEFT JOIN supervisor sp ON s.supervisor_p_id = sp.p_id
+        LEFT JOIN school sc ON t.school_id = sc.school_id
         WHERE s.id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $session_id);
@@ -140,19 +143,14 @@ $pdf->setPageMark();
 // Define the path to the fonts directory
 $fontPath = __DIR__ . '/fonts/';
 
-// Add the THSarabun font by specifying the full path to the definition file.
-// This is the most reliable method.
-$pdf->AddFont('thsarabun', 'B', $fontPath . 'thsarabunb.php'); // Bold
-$pdf->AddFont('thsarabun', '', $fontPath . 'thsarabun.php');  // Regular
-// --- END: Add Thai font ---
-
-// Set font for the content
-$pdf->SetFont('thsarabun', '', 20);
-
-// ... (ส่วนโหลด Library และตั้งค่า Font ก่อนหน้า ให้คงไว้เหมือนเดิม) ...
+// Add THSarabun font family
+// TCPDF will automatically look for thsarabun.php, thsarabunb.php (bold), thsarabuni.php (italic) etc.
+// Make sure you have thsarabun.php and thsarabunb.php in your /fonts/ directory.
+$pdf->AddFont('thsarabun', '', $fontPath . 'thsarabun.php');
+$pdf->AddFont('thsarabun', 'B', $fontPath . 'thsarabunb.php');
 
 // ตั้งค่าสีตัวอักษร (สีน้ำเงินเข้ม #000033)
-$pdf->SetTextColor(0, 0, 51); 
+$pdf->SetTextColor(8, 13, 86); 
 
 // --- ส่วนที่ 0: เลขที่อ้างอิง (Reference Number) ---
 // สร้างเลขที่อ้างอิงตามรูปแบบที่ต้องการ
@@ -162,7 +160,7 @@ $ref_year = toThaiNumber((int)date('Y', strtotime($session['supervision_date']))
 $reference_number = "{$ref_prefix}{$ref_running_no}/{$ref_year}";
 
 // ตั้งค่า Font และตำแหน่งสำหรับเลขที่อ้างอิง (มุมขวาบน)
-$pdf->SetFont('thsarabun', '', 22);
+$pdf->SetFont('thsarabun', 'B', 22); // ใช้ฟอนต์ thsarabun ตัวหนา
 // SetXY(x, y) -> x: ระยะห่างจากขอบซ้าย, y: ระยะห่างจากขอบบน
 $pdf->SetXY(241, 11); 
 $pdf->Cell(0, 0, '' . $reference_number, 0, 1, 'L');
@@ -170,32 +168,34 @@ $pdf->Cell(0, 0, '' . $reference_number, 0, 1, 'L');
 // --- ส่วนที่ 1: ชื่อครู (Teacher Name) ---
 // ปรับตำแหน่ง Y (แนวตั้ง) ตรงนี้: ยิ่งเลขมาก ยิ่งลงมาข้างล่าง
 // จากรูปเกียรติบัตร พื้นที่ว่างน่าจะอยู่ประมาณ 75-85 มม. จากขอบบน
-$pdf->SetFont('thsarabun', '', 34); // ปรับขนาดตัวอักษรตรงนี้ (B = ตัวหนา)
-$pdf->SetY(80);  
+$pdf->SetFont('thsarabun', 'B', 34); // ปรับขนาดและใช้ฟอนต์ตัวหนา
+$pdf->SetY(75);  
 // Cell(width, height, text, border, ln, align) -> Align 'C' คือจัดกึ่งกลางหน้ากระดาษอัตโนมัติ
 $pdf->Cell(0, 0, $teacher_name, 0, 1, 'C', 0, '', 0);
 
+// --- ส่วนเพิ่มเติม: ตำแหน่งและโรงเรียน ---
+// สร้างข้อความ "ครู (ตำแหน่ง) โรงเรียน (ชื่อโรงเรียน)"
+$school_line = "ครู โรงเรียน {$session['SchoolName']}";
+// ตั้งค่า Font และตำแหน่ง Y (ให้เยื้องลงมาจากชื่อเล็กน้อย)
+$pdf->SetFont('thsarabun', 'B', 28); // ใช้ฟอนต์ thsarabun ตัวหนา
+$pdf->SetY(90); // ปรับตำแหน่ง Y ตามความเหมาะสม
+$pdf->Cell(0, 0, $school_line, 0, 1, 'C', 0, '', 0);
 
 // --- ส่วนที่ 2: วันที่ (Date) ---
 // จากรูปเกียรติบัตร บรรทัดวันที่อยู่ด้านล่าง ก่อนลายเซ็น
-// กะประมาณด้วยสายตา น่าจะอยู่ที่ Y = 155 มม.
-$y_date = 155; 
-$pdf->SetFont('thsarabun', '', 22); // ขนาดตัวอักษรวันที่
+// กำหนดตำแหน่ง Y (แนวตั้ง) และขนาด Font
+$y_position = 151;
+$pdf->SetFont('thsarabun', 'B', 24); // ใช้ฟอนต์ thsarabun ตัวหนา
 
-// 2.1 วันที่ (Day)
-// ปรับค่า X (แนวนอน) เพื่อขยับซ้าย-ขวา
-$pdf->SetXY(128,151); 
-$pdf->Cell(10, 0, $issue_date_parts['day'], 0, 0, 'C');
+// ตั้งค่าตำแหน่งเริ่มต้นสำหรับข้อความวันที่
+$pdf->SetXY(90,157);
 
-// 2.2 เดือน (Month)
-// ปรับค่า X ให้ตรงกับช่องว่างของเดือน
-$pdf->SetXY(158, 151); 
-$pdf->Cell(30, 0, $issue_date_parts['month'], 0, 0, 'C');
+// สร้างข้อความวันที่ในรูปแบบ "ให้ไว้ ณ วันที่ [วัน] เดือน [เดือน] พ.ศ. [ปี]"
+// ใช้ช่องว่างหลายช่อง (spaces) เพื่อเว้นระยะห่างระหว่างส่วนต่างๆ ให้พอดีกับแบบฟอร์ม
+$date_text = "ให้ไว้ ณ วันที่   " . $issue_date_parts['day'] . "   เดือน   " . $issue_date_parts['month'] . "   พ.ศ.   " . $issue_date_parts['year'];
 
-// 2.3 พ.ศ. (Year)
-// ปรับค่า X ให้ตรงกับช่องว่างของปี
-$pdf->SetXY(139, 151); 
-$pdf->Cell(0,0, $issue_date_parts['year'], 0, 0, 'C');
+// แสดงผลข้อความวันที่ทั้งหมดในครั้งเดียว
+$pdf->Cell(0, 0, $date_text, 0, 1, 'L');
 
 // Output the PDF to the browser
 $pdf->Output('certificate_' . $session_id . '.pdf', 'I');

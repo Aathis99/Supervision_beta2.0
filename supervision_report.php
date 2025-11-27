@@ -135,20 +135,21 @@ while ($row = $result_images->fetch_assoc()) {
     <title>รายงานผลการนิเทศ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="css/report_style.css"> </head>
+    <link rel="stylesheet" href="css/report_style.css">
+</head>
 
 <body>
 
     <div class="container">
-        <div class="report-container" style="position: relative;"> 
+        <div class="report-container" style="position: relative;">
 
-            <div class="text-center mb-5" style="margin-bottom: 25px !important;"> 
+            <div class="text-center mb-5" style="margin-bottom: 25px !important;">
                 <img src="images/logo.png" alt="โลโก้กระทรวงศึกษาธิการ" style="max-width: 80px; margin-bottom: 10px;">
-                
+
                 <p style="margin-bottom: 0; font-weight: bold; font-size: 0.95rem;">แบบบันทึกการจัดการเรียนรู้และการจัดการเรียนการสอน ภาคเรียนที่ ๒ ปีการศึกษา ๒๕๖๘</p>
                 <p style="margin-bottom: 0; font-weight: bold; font-size: 0.9rem;">สำนักงานเขตพื้นที่การศึกษามัธยมศึกษาลำปาง ลำพูน</p>
             </div>
-            
+
             <h5 class="header-title"><i class="fas fa-user-tie"></i> ข้อมูลผู้รับนิเทศ</h5>
             <div class="row mb-3">
                 <div class="col-6">
@@ -181,7 +182,8 @@ while ($row = $result_images->fetch_assoc()) {
                     <div class="col-6"><strong>รหัสวิชา:</strong> <?php echo $info['subject_code']; ?></div>
                     <div class="col-6"><strong>ชื่อวิชา:</strong> <?php echo $info['subject_name']; ?></div>
                 </div>
-                <div class="row mt-2"> <div class="col-6"><strong>ครั้งที่นิเทศ:</strong> <?php echo $info['inspection_time']; ?></div>
+                <div class="row mt-2">
+                    <div class="col-6"><strong>ครั้งที่นิเทศ:</strong> <?php echo $info['inspection_time']; ?></div>
                     <div class="col-6"><strong>วันที่:</strong> <?php echo date('d/m/Y', strtotime($info['supervision_date'])); ?></div>
                 </div>
             </div>
@@ -190,16 +192,16 @@ while ($row = $result_images->fetch_assoc()) {
 
             <div class="table-responsive">
                 <table class="table table-bordered table-kpi">
-                    <thead> 
+                    <thead>
                         <tr>
                             <th style="width: 40%;">ประเด็นคำถาม</th>
                             <th style="width: 10%; text-align: center;">คะแนน</th>
                             <th style="width: 50%;">ข้อค้นพบ / ความคิดเห็น</th>
                         </tr>
                     </thead>
-                    
+
                     <?php foreach ($kpi_data as $ind_id => $data): ?>
-                        <tbody style="page-break-inside: avoid;"> 
+                        <tbody style="page-break-inside: avoid;">
                             <tr class="indicator-title-row">
                                 <td colspan="3"><?php echo $data['title']; ?></td>
                             </tr>
@@ -223,17 +225,17 @@ while ($row = $result_images->fetch_assoc()) {
 
                             <?php if (isset($suggestions[$ind_id]) && !empty($suggestions[$ind_id])): ?>
                                 <tr>
-                                    <td colspan="3" class="kpi-suggestion-cell"> 
+                                    <td colspan="3" class="kpi-suggestion-cell">
                                         <i class="fas fa-comment-dots"></i> <strong>ข้อเสนอแนะเพิ่มเติม:</strong>
                                         <?php echo nl2br(htmlspecialchars($suggestions[$ind_id])); ?>
                                     </td>
                                 </tr>
                             <?php endif; ?>
-                        </tbody> 
+                        </tbody>
                     <?php endforeach; ?>
-                    
+
                     <tbody>
-                        <tr style="background-color: white;"> 
+                        <tr style="background-color: white;">
                             <td class="text-end"><strong>คะแนนรวมทั้งหมด</strong></td>
                             <td class="text-center fw-bold"><?php echo $total_score; ?> / <?php echo $count_questions * 3; ?></td>
                             <td></td>
@@ -268,6 +270,15 @@ while ($row = $result_images->fetch_assoc()) {
                 </div>
             <?php endif; ?>
 
+            <!-- ⭐️ ปุ่มสำหรับเลื่อนลงล่างสุด (สไตล์ Bootstrap 5) ⭐️ -->
+            <button onclick="scrollToBottom()" class="btn btn-primary rounded-pill position-fixed bottom-0 end-0 m-3 shadow" title="เลื่อนลงล่างสุด" style="z-index: 99;">
+                <i class="fas fa-arrow-down"></i>
+            </button>
+
+            <!-- ⭐️ [ตัวเลือกเสริม] ปุ่มสำหรับเลื่อนขึ้นบนสุด (สไตล์ Bootstrap 5) ⭐️ -->
+            <button onclick="scrollToTop()" id="scrollToTopBtn" class="btn btn-secondary rounded-pill position-fixed bottom-0 end-0 m-3 shadow" title="เลื่อนขึ้นบนสุด" style="z-index: 99; margin-bottom: 80px !important; display: none;">
+                <i class="fas fa-arrow-up"></i>
+            </button>
 
             <div class="text-center mt-5 no-print">
                 <a href="history.php" class="btn btn-secondary me-2"><i class="fas fa-list-alt"></i> กลับไปหน้าประวัติ</a>
@@ -276,6 +287,29 @@ while ($row = $result_images->fetch_assoc()) {
 
         </div>
     </div>
+
+    <script>
+        // ⭐️ ฟังก์ชันสำหรับเลื่อนลงล่างสุดแบบทันที ⭐️
+        function scrollToBottom() {
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        // ⭐️ ฟังก์ชันสำหรับเลื่อนขึ้นบนสุดแบบทันที ⭐️
+        function scrollToTop() {
+            window.scrollTo(0, 0);
+        }
+
+        // ⭐️ ฟังก์ชันสำหรับแสดง/ซ่อนปุ่มเลื่อนขึ้นบนสุด ⭐️
+        window.onscroll = function() {
+            // ถ้าเลื่อนลงมามากกว่า 100px จากด้านบนสุด ให้แสดงปุ่ม
+            if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                scrollToTopBtn.style.display = "block";
+            } else {
+                // ถ้าน้อยกว่า ก็ซ่อนปุ่ม
+                scrollToTopBtn.style.display = "none";
+            }
+        };
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
