@@ -5,20 +5,19 @@ header('Content-Type: application/json');
 require_once 'config/db_connect.php'; 
 
 // ----------------------------------------------------------------------
-// โหมด 1: ดึงข้อมูลเฉพาะบุคคลเมื่อเลือกชื่อ (full_name)
+// โหมด 1: ดึงข้อมูลเฉพาะบุคคลเมื่อเลือกชื่อ (รับค่าเป็น t_pid)
 // ----------------------------------------------------------------------
-if (isset($_GET['full_name'])) {
+if (isset($_GET['t_pid'])) {
     
-    $full_name = trim($_GET['full_name']);
-    $full_name_search = $conn->real_escape_string($full_name); 
+    $t_pid = trim($_GET['t_pid']);
+    $t_pid_search = $conn->real_escape_string($t_pid); 
     
-    // ⭐️ FIX SQL: ค้นหาจากชื่อเต็มที่ถูก CONCAT() ในฐานข้อมูล
-    // ตรวจสอบให้แน่ใจว่าการ CONCAT นี้ตรงกับที่คุณใช้สร้าง Datalist ใน teacher.php
+    // ⭐️ FIX SQL: เปลี่ยนมาค้นหาด้วย t_pid ซึ่งแม่นยำกว่า
     $sql = "SELECT t.t_pid, t.adm_name, v.core_learning_group, s.SchoolName
             FROM teacher t
             LEFT JOIN school s ON t.school_id = s.school_id
             LEFT JOIN view_teacher_core_groups v ON t.t_pid = v.t_pid
-            WHERE CONCAT(IFNULL(t.PrefixName, ''), ' ', t.Fname, ' ', t.Lname) = '$full_name_search'";
+            WHERE t.t_pid = '$t_pid_search'";
             
     $result = $conn->query($sql);
 

@@ -67,6 +67,12 @@ if (!$inspection_data) {
                 // รวมฟอร์ม KPI ทั้งหมดเข้ามาแสดงผลในหน้านี้
                 include 'forms/kpi_form.php';
                 ?>
+                <!-- ⭐️ เพิ่มปุ่มย้อนกลับ ⭐️ -->
+                <div class="text-center mt-4">
+                    <a href="supervision_start.php" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> ย้อนกลับเพื่อแก้ไขข้อมูล
+                    </a>
+                </div>
             <?php endif; ?>
         </div>
     </div>

@@ -145,8 +145,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
-        // เปลี่ยนเส้นทางไปยังหน้ารายงานของ session ที่เพิ่งสร้าง
-        header("Location: supervision_report.php?session_id=" . $session_id);
+        // ⭐️ ตั้งค่าข้อความแจ้งเตือนสำหรับแสดงผลในหน้า history.php
+        $_SESSION['flash_message'] = 'บันทึกข้อมูลการนิเทศเรียบร้อยแล้ว';
+
+        // ⭐️ เปลี่ยนเส้นทางไปยังหน้าประวัติ (history.php)
+        header("Location: history.php");
         exit();
 
     } catch (Exception $e) {

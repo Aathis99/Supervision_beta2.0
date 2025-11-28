@@ -1,18 +1,10 @@
    <?php
     // teacher_form.php
-    // ตรวจสอบการเชื่อมต่อ
-    if (!isset($conn)) {
-        // หาก $conn ไม่มีอยู่ ให้ทำการเชื่อมต่อใหม่ (ไม่ควรเกิดขึ้นถ้า index.php ทำงานถูกต้อง)
-        require_once 'config/db_connect.php';
-    }
-
-    // ดึงรายชื่อกลุ่มสาระการเรียนรู้สำหรับ Datalist จาก view_teacher_core_groups
-    $sql_groups = "SELECT DISTINCT core_learning_group FROM view_teacher_core_groups WHERE core_learning_group IS NOT NULL AND core_learning_group != '' COLLATE utf8mb4_general_ci ORDER BY core_learning_group ASC";
-    $result_groups = $conn->query($sql_groups);
 
 
     // ดึงรายชื่อครูสำหรับ Datalist
-    $sql_teachers = "SELECT CONCAT(IFNULL(PrefixName,''), ' ', Fname, ' ', Lname) AS full_name_display FROM teacher ORDER BY Fname ASC";
+    // ⭐️ แก้ไข: ดึง t_pid มาด้วยเพื่อใช้เป็น key ที่แม่นยำ
+    $sql_teachers = "SELECT t_pid, CONCAT(IFNULL(PrefixName,''), ' ', Fname, ' ', Lname) AS full_name_display FROM teacher ORDER BY Fname ASC";
     $result_teachers = $conn->query($sql_teachers);
     ?>
 
@@ -26,14 +18,14 @@
                <label for="teacher_name_input" class="form-label fw-bold">ชื่อผู้รับนิเทศ</label>
                <input list="teacher_names_list" id="teacher_name_input" name="teacher_name"
                    class="form-control search-field"
-                   placeholder="-- พิมพ์เพื่อค้นหา --"
-                   onchange="fetchTeacherData(this.value)">
+                   placeholder="-- พิมพ์เพื่อค้นหา --">
 
                <datalist id="teacher_names_list">
                    <?php
                     if ($result_teachers) {
                         while ($row_teacher = $result_teachers->fetch_assoc()) {
-                            echo '<option value="' . htmlspecialchars(trim($row_teacher['full_name_display'])) . '">';
+                            // ⭐️ แก้ไข: เพิ่ม data-pid เข้าไปใน option เพื่อใช้ในการค้นหา
+                            echo '<option value="' . htmlspecialchars(trim($row_teacher['full_name_display'])) . '" data-pid="' . htmlspecialchars($row_teacher['t_pid']) . '">';
                         }
                     }
                     ?>
@@ -52,16 +44,7 @@
 
            <div class="col-md-6">
                <label for="learning_group" class="form-label fw-bold">กลุ่มสาระการเรียนรู้</label>
-               <input list="learning_groups_list" id="learning_group" name="learning_group" class="form-control display-field" placeholder="--" readonly>
-               <datalist id="learning_groups_list">
-                   <?php
-                    if ($result_groups) {
-                        while ($row_group = $result_groups->fetch_assoc()) {
-                            echo '<option value="' . htmlspecialchars($row_group['core_learning_group']) . '">';
-                        }
-                    }
-                    ?>
-               </datalist>
+               <input id="learning_group" name="learning_group" class="form-control display-field" placeholder="--" readonly>
            </div>
 
            <div class="col-md-6">
@@ -79,6 +62,12 @@
                <div class="mt-4 mb-4">
                    <?php require_once 'forms/form_selector.php'; ?>
                </div>
+               <!-- ⭐️ เพิ่มปุ่มย้อนกลับ ⭐️ -->
+               <div class="col-auto">
+                   <a href="history.php" class="btn btn-secondary btn-lg">
+                       <i class="fas fa-arrow-left"></i> ย้อนกลับ
+                   </a>
+               </div>
                <div class="col-auto">
                    <button type="submit" class="btn btn-success btn-lg">
                        ดำเนินการต่อ
@@ -91,27 +80,52 @@
        </form>
 
        <script>
-           // ฟังก์ชันสำหรับดึงข้อมูลผู้รับนิเทศเมื่อมีการเลือกชื่อ
-           function fetchTeacherData(selectedName) {
+           // ⭐️ แก้ไข: เปลี่ยนมาใช้ Event Listener เพื่อดึงข้อมูลจาก data-pid
+           document.addEventListener('DOMContentLoaded', function() {
+               const teacherInput = document.getElementById('teacher_name_input');
+               const teacherList = document.getElementById('teacher_names_list');
+
+               teacherInput.addEventListener('input', function(e) {
+                   const inputValue = e.target.value;
+                   let selectedPid = null;
+
+                   // วนลูปหา option ที่ตรงกับค่าที่ป้อน
+                   for (const option of teacherList.options) {
+                       if (option.value === inputValue) {
+                           selectedPid = option.getAttribute('data-pid');
+                           break;
+                       }
+                   }
+
+                   // ถ้าเจอ pid ให้เรียกฟังก์ชัน fetch
+                   if (selectedPid) {
+                       fetchTeacherData(selectedPid);
+                   }
+               });
+           });
+
+           // ⭐️ แก้ไข: ฟังก์ชัน fetchTeacherData จะรับ t_pid แทน selectedName
+           function fetchTeacherData(teacherPid) {
                const tidField = document.getElementById('t_pid');
                const admNameField = document.getElementById('adm_name');
                const learningGroupField = document.getElementById('learning_group');
-               const schoolNameField = document.getElementById('school_name'); // เพิ่มตัวแปรสำหรับ input โรงเรียน
+               const schoolNameField = document.getElementById('school_name');
 
                tidField.value = '';
                admNameField.value = '';
                learningGroupField.value = '';
-               schoolNameField.value = ''; // ล้างค่าเดิม
+               schoolNameField.value = '';
 
-               if (selectedName) {
-                   fetch(`fetch_teacher.php?full_name=${encodeURIComponent(selectedName)}`)
+               if (teacherPid) {
+                   // ⭐️ แก้ไข: ส่ง t_pid ไปแทน full_name
+                   fetch(`fetch_teacher.php?t_pid=${encodeURIComponent(teacherPid)}`)
                        .then(response => response.json())
                        .then(result => {
                            if (result.success) {
                                tidField.value = result.data.t_pid;
                                admNameField.value = result.data.adm_name;
                                learningGroupField.value = result.data.learning_group;
-                               schoolNameField.value = result.data.school_name; // นำข้อมูลโรงเรียนมาแสดง
+                               schoolNameField.value = result.data.school_name;
                            } else {
                                console.error(result.message);
                            }
@@ -125,10 +139,15 @@
            function validateSelection() {
                const supervisorName = document.getElementById('supervisor_name').value.trim();
                const teacherName = document.getElementById('teacher_name_input').value.trim();
+               const teacherPid = document.getElementById('t_pid').value.trim(); // ⭐️ เพิ่ม: ดึงค่า t_pid
 
                if (supervisorName === '' || teacherName === '') {
                    alert('โปรดเลือกข้อมูลผู้นิเทศและผู้รับนิเทศให้ครบถ้วนก่อนดำเนินการต่อ');
                    return false; // หยุดการส่งฟอร์ม
+               }
+               if (teacherPid === '') { // ⭐️ เพิ่ม: ตรวจสอบว่า t_pid มีค่าหรือไม่
+                   alert('โปรดเลือกชื่อผู้รับนิเทศจากรายการที่มีอยู่ให้ถูกต้อง');
+                   return false;
                }
 
                // หากมีการเลือกแบบฟอร์มแล้ว (จากโค้ดที่คุณย้ายมา) ให้ตรวจสอบต่อ
