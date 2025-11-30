@@ -28,7 +28,7 @@
                     
                     <div class="col-md-6">
                         <label for="supervisor_name" class="form-label fw-bold">ชื่อผู้นิเทศ</label>
-                        <select id="supervisor_name" name="supervisor_name" class="form-select search-field" onchange="fetchPersonnelData()">
+                        <select id="supervisor_name" name="supervisor_name" class="form-select search-field" onchange="fetchPersonnelData(this.value)">
                             <option value="">-- กรุณาเลือกชื่อผู้นิเทศ --</option>
                             </select>
                     </div>
@@ -50,6 +50,9 @@
                 </div>
             </div>
             <script>
+    // ⭐️ ดึงค่าที่เคยเลือกไว้จาก PHP (ถ้ามี)
+    const preselectedSupervisorName = <?php echo json_encode($inspection_data['supervisor_name'] ?? null); ?>;
+
     function populateNameDropdown() {
         const selectElement = document.getElementById('supervisor_name');
         
@@ -64,24 +67,29 @@
                     option.value = name; 
                     option.textContent = name;
                     selectElement.appendChild(option);
+
+                    // ⭐️ ถ้าชื่อนี้ตรงกับที่เคยเลือกไว้ ให้ตั้งเป็น selected
+                    if (preselectedSupervisorName && name === preselectedSupervisorName) {
+                        option.selected = true;
+                    }
                 });
+
+                // ⭐️ ถ้ามีค่าที่เคยเลือกไว้ ให้เรียก fetchPersonnelData เพื่อเติมข้อมูลอื่น ๆ
+                if (preselectedSupervisorName) {
+                    fetchPersonnelData(preselectedSupervisorName);
+                }
             })
             .catch(error => console.error('Error fetching supervisor names:', error));
     }
 
-    function fetchPersonnelData() {
-        const selectedName = document.getElementById('supervisor_name').value; 
+    function fetchPersonnelData(selectedName) {
         const pidField = document.getElementById('p_id');
         const agencyField = document.getElementById('agency'); 
         const positionField = document.getElementById('position');
-        // ⭐️ FIX: ตัวแปรสำหรับ input ที่ซ่อนไว้
         const supervisorIdHiddenField = document.getElementById('supervisor_id'); 
 
-        pidField.value = '';
-        agencyField.value = ''; 
-        positionField.value = '';
-        // ⭐️ FIX: ล้างค่า input ที่ซ่อนไว้
-        supervisorIdHiddenField.value = ''; 
+        // ⭐️ ไม่ต้องล้างค่าถ้าไม่มี selectedName (เพื่อให้ค่าที่เคยกรอกยังคงอยู่)
+        if (!selectedName) return;
 
         if (selectedName) {
             // ⭐️ NOTE: สมมติว่า fetch_supervisor.php สามารถดึงข้อมูลบุคลากรตามชื่อได้
@@ -92,7 +100,6 @@
                         pidField.value = result.data.p_id;
                         agencyField.value = result.data.OfficeName; 
                         positionField.value = result.data.position;
-                        // ⭐️ FIX: อัพเดตค่าใน input ที่ซ่อนไว้
                         supervisorIdHiddenField.value = result.data.p_id;
                     } else {
                         console.error(result.message);

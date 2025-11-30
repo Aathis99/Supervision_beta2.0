@@ -17,7 +17,7 @@
            <div class="col-md-6">
                <label for="teacher_name_input" class="form-label fw-bold">ชื่อผู้รับนิเทศ</label>
                <input list="teacher_names_list" id="teacher_name_input" name="teacher_name"
-                   class="form-control search-field"
+                   class="form-control search-field" value="<?php echo htmlspecialchars($inspection_data['teacher_name'] ?? ''); ?>"
                    placeholder="-- พิมพ์เพื่อค้นหา --">
 
                <datalist id="teacher_names_list">
@@ -79,87 +79,99 @@
 
        </form>
 
-       <script>
-           // ⭐️ แก้ไข: เปลี่ยนมาใช้ Event Listener เพื่อดึงข้อมูลจาก data-pid
-           document.addEventListener('DOMContentLoaded', function() {
-               const teacherInput = document.getElementById('teacher_name_input');
-               const teacherList = document.getElementById('teacher_names_list');
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const teacherInput = document.getElementById('teacher_name_input');
+        const teacherList = document.getElementById('teacher_names_list');
 
-               teacherInput.addEventListener('input', function(e) {
-                   const inputValue = e.target.value;
-                   let selectedPid = null;
+        // ตรวจจับการพิมพ์ในช่องชื่อ
+        teacherInput.addEventListener('input', function(e) {
+            const inputValue = e.target.value;
+            let selectedPid = null;
 
-                   // วนลูปหา option ที่ตรงกับค่าที่ป้อน
-                   for (const option of teacherList.options) {
-                       if (option.value === inputValue) {
-                           selectedPid = option.getAttribute('data-pid');
-                           break;
-                       }
-                   }
+            // วนลูปตรวจสอบว่าสิ่งที่พิมพ์ ตรงกับตัวเลือกใน Datalist หรือไม่
+            for (const option of teacherList.options) {
+                if (option.value === inputValue) {
+                    selectedPid = option.getAttribute('data-pid');
+                    break;
+                }
+            }
 
-                   // ถ้าเจอ pid ให้เรียกฟังก์ชัน fetch
-                   if (selectedPid) {
-                       fetchTeacherData(selectedPid);
-                   }
-               });
-           });
+            if (selectedPid) {
+                // ✅ กรณีเจอชื่อที่ถูกต้อง: ให้ดึงข้อมูลมาแสดง
+                fetchTeacherData(selectedPid);
+            } else {
+                // ❌ กรณีไม่เจอ (พิมพ์ไม่ครบ, พิมพ์มั่ว, หรือกำลังพิมพ์): ให้ล้างข้อมูลออกทันที
+                clearTeacherData();
+            }
+        });
+        
+        // เพิ่ม: ป้องกันการกด Enter แล้ว Submit ฟอร์มโดยไม่ตั้งใจ
+        teacherInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
 
-           // ⭐️ แก้ไข: ฟังก์ชัน fetchTeacherData จะรับ t_pid แทน selectedName
-           function fetchTeacherData(teacherPid) {
-               const tidField = document.getElementById('t_pid');
-               const admNameField = document.getElementById('adm_name');
-               const learningGroupField = document.getElementById('learning_group');
-               const schoolNameField = document.getElementById('school_name');
+        // ⭐️ เพิ่ม: ถ้ามีค่าที่เคยเลือกไว้ในช่อง input ตอนโหลดหน้า ให้ดึงข้อมูลมาแสดง
+        const initialTeacherName = teacherInput.value;
+        if (initialTeacherName) {
+            const initialPid = "<?php echo htmlspecialchars($inspection_data['t_pid'] ?? ''); ?>";
+            if (initialPid) fetchTeacherData(initialPid);
+        }
+    });
 
-               tidField.value = '';
-               admNameField.value = '';
-               learningGroupField.value = '';
-               schoolNameField.value = '';
+    // ฟังก์ชันล้างข้อมูล (แยกออกมาเพื่อให้เรียกใช้ได้ง่าย)
+    function clearTeacherData() {
+        document.getElementById('t_pid').value = '';
+        document.getElementById('adm_name').value = '';
+        document.getElementById('learning_group').value = '';
+        document.getElementById('school_name').value = '';
+    }
 
-               if (teacherPid) {
-                   // ⭐️ แก้ไข: ส่ง t_pid ไปแทน full_name
-                   fetch(`fetch_teacher.php?t_pid=${encodeURIComponent(teacherPid)}`)
-                       .then(response => response.json())
-                       .then(result => {
-                           if (result.success) {
-                               tidField.value = result.data.t_pid;
-                               admNameField.value = result.data.adm_name;
-                               learningGroupField.value = result.data.learning_group;
-                               schoolNameField.value = result.data.school_name;
-                           } else {
-                               console.error(result.message);
-                           }
-                       })
-                       .catch(error => {
-                           console.error('AJAX Error:', error);
-                       });
-               }
-           }
+    // ฟังก์ชันดึงข้อมูล (ปรับปรุงใหม่)
+    function fetchTeacherData(teacherPid) {
+        // ล้างค่าเก่าก่อนเสมอ
+        clearTeacherData();
 
-           function validateSelection() {
-               const supervisorName = document.getElementById('supervisor_name').value.trim();
-               const teacherName = document.getElementById('teacher_name_input').value.trim();
-               const teacherPid = document.getElementById('t_pid').value.trim(); // ⭐️ เพิ่ม: ดึงค่า t_pid
+        if (teacherPid) {
+            fetch(`fetch_teacher.php?t_pid=${encodeURIComponent(teacherPid)}`)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        document.getElementById('t_pid').value = result.data.t_pid;
+                        document.getElementById('adm_name').value = result.data.adm_name;
+                        document.getElementById('learning_group').value = result.data.learning_group;
+                        document.getElementById('school_name').value = result.data.school_name;
+                    } else {
+                        console.error(result.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('AJAX Error:', error);
+                });
+        }
+    }
 
-               if (supervisorName === '' || teacherName === '') {
-                   alert('โปรดเลือกข้อมูลผู้นิเทศและผู้รับนิเทศให้ครบถ้วนก่อนดำเนินการต่อ');
-                   return false; // หยุดการส่งฟอร์ม
-               }
-               if (teacherPid === '') { // ⭐️ เพิ่ม: ตรวจสอบว่า t_pid มีค่าหรือไม่
-                   alert('โปรดเลือกชื่อผู้รับนิเทศจากรายการที่มีอยู่ให้ถูกต้อง');
-                   return false;
-               }
+    // ฟังก์ชันตรวจสอบก่อนกดปุ่มดำเนินการต่อ (ใช้ Logic เดิมของคุณแต่จะทำงานสมบูรณ์ขึ้น)
+    function validateSelection() {
+        const supervisorName = document.getElementById('supervisor_name').value.trim();
+        const teacherName = document.getElementById('teacher_name_input').value.trim();
+        const teacherPid = document.getElementById('t_pid').value.trim(); 
 
-               // หากมีการเลือกแบบฟอร์มแล้ว (จากโค้ดที่คุณย้ายมา) ให้ตรวจสอบต่อ
-               // หากต้องการให้บังคับเลือกแบบฟอร์ม   ด้วย ให้เพิ่ม Logic ตรงนี้
-               // เช่น:
-               // const formSelected = document.querySelector('input[name="evaluation_type"]:checked');
-               // if (!formSelected) {
-               //     alert('โปรดเลือกแบบฟอร์มประเมินก่อนดำเนินการต่อ');
-               //     return false;
-               // }
+        // เช็คว่ามีการกรอกชื่อไหม
+        if (supervisorName === '' || teacherName === '') {
+            alert('โปรดเลือกข้อมูลผู้นิเทศและผู้รับนิเทศให้ครบถ้วนก่อนดำเนินการต่อ');
+            return false; 
+        }
+        
+        // ⭐ เช็คจุดสำคัญ: ชื่ออาจจะมี แต่รหัสบัตรประชาชน (t_pid) ว่างเปล่าหรือไม่?
+        // (ถ้าพิมพ์มั่ว t_pid จะถูกเคลียร์เป็นค่าว่าง ทำให้เข้าเงื่อนไขนี้และไปต่อไม่ได้)
+        if (teacherPid === '') { 
+            alert('ชื่อผู้รับนิเทศไม่ถูกต้อง โปรดเลือกจากรายชื่อที่ระบบแนะนำเท่านั้น');
+            return false;
+        }
 
-               return true; // อนุญาตให้ส่งฟอร์ม
-           }
-           // ⭐️ สิ้นสุดฟังก์ชัน validateSelection() ⭐️
-       </script>
+        return true; 
+    }
+</script>
