@@ -63,16 +63,16 @@ if (!$inspection_data) {
                     <a href="index.php" class="btn btn-danger">ไปยังแบบฟอร์มเริ่มต้น</a>
                 </div>
             <?php else: ?>
-                <?php
-                // รวมฟอร์ม KPI ทั้งหมดเข้ามาแสดงผลในหน้านี้
-                include 'forms/kpi_form.php';
-                ?>
-                <!-- ⭐️ เพิ่มปุ่มย้อนกลับ ⭐️ -->
-                <div class="text-center mt-4">
+                <!-- ⭐️ ย้ายปุ่มย้อนกลับมาไว้ด้านบน ⭐️ -->
+                <div class="d-flex justify-content-end mb-3">
                     <a href="supervision_start.php?edit=true" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> ย้อนกลับเพื่อแก้ไขข้อมูล
                     </a>
                 </div>
+                <?php
+                // รวมฟอร์ม KPI ทั้งหมดเข้ามาแสดงผลในหน้านี้
+                include 'forms/kpi_form.php';
+                ?>
             <?php endif; ?>
         </div>
     </div>

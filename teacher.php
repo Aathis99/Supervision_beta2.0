@@ -16,10 +16,7 @@
                <datalist id="teacher_names_list">
                    <?php
                     if ($result_teachers) {
-                        while ($row_teacher = $result_teachers->fetch_assoc()) {
-                            // ⭐️ แก้ไข: เพิ่ม data-pid เข้าไปใน option เพื่อใช้ในการค้นหา
-                            echo '<option value="' . htmlspecialchars(trim($row_teacher['full_name_display'])) . '" data-pid="' . htmlspecialchars($row_teacher['t_pid']) . '">';
-                        }
+                        // ข้อมูลจะถูกเติมโดย JavaScript
                     }
                     ?>
                </datalist>
@@ -74,10 +71,12 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        populateTeacherDatalist(); // เรียกฟังก์ชันเพื่อเติมรายชื่อครู
+
         const teacherInput = document.getElementById('teacher_name_input');
         const teacherList = document.getElementById('teacher_names_list');
 
-        // ตรวจจับการพิมพ์ในช่องชื่อ
+        // ตรวจจับการเลือกหรือพิมพ์ในช่องชื่อ
         teacherInput.addEventListener('input', function(e) {
             const inputValue = e.target.value;
             let selectedPid = null;
@@ -91,28 +90,46 @@
             }
 
             if (selectedPid) {
-                // ✅ กรณีเจอชื่อที่ถูกต้อง: ให้ดึงข้อมูลมาแสดง
                 fetchTeacherData(selectedPid);
             } else {
-                // ❌ กรณีไม่เจอ (พิมพ์ไม่ครบ, พิมพ์มั่ว, หรือกำลังพิมพ์): ให้ล้างข้อมูลออกทันที
                 clearTeacherData();
             }
         });
-        
+
         // เพิ่ม: ป้องกันการกด Enter แล้ว Submit ฟอร์มโดยไม่ตั้งใจ
         teacherInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
             }
         });
-
-        // ⭐️ เพิ่ม: ถ้ามีค่าที่เคยเลือกไว้ในช่อง input ตอนโหลดหน้า ให้ดึงข้อมูลมาแสดง
-        const initialTeacherName = teacherInput.value;
-        if (initialTeacherName) {
-            const initialPid = "<?php echo htmlspecialchars($inspection_data['t_pid'] ?? ''); ?>";
-            if (initialPid) fetchTeacherData(initialPid);
-        }
     });
+
+    // ฟังก์ชันสำหรับดึงรายชื่อครูทั้งหมดมาใส่ใน Datalist
+    function populateTeacherDatalist() {
+        const datalist = document.getElementById('teacher_names_list');
+        fetch('fetch_teacher.php?action=get_names')
+            .then(response => response.json())
+            .then(teachers => {
+                teachers.forEach(teacher => {
+                    const option = document.createElement('option');
+                    option.value = teacher.full_name_display;
+                    option.setAttribute('data-pid', teacher.t_pid);
+                    datalist.appendChild(option);
+                });
+
+                // หลังจากเติมรายชื่อเสร็จ, ตรวจสอบว่ามีค่าที่เคยเลือกไว้หรือไม่
+                const initialTeacherName = document.getElementById('teacher_name_input').value;
+                if (initialTeacherName) {
+                    for (const option of datalist.options) {
+                        if (option.value === initialTeacherName) {
+                            fetchTeacherData(option.getAttribute('data-pid'));
+                            break;
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching teacher names:', error));
+    }
 
     // ฟังก์ชันล้างข้อมูล (แยกออกมาเพื่อให้เรียกใช้ได้ง่าย)
     function clearTeacherData() {
@@ -147,7 +164,7 @@
     }
 
     // ฟังก์ชันตรวจสอบก่อนกดปุ่มดำเนินการต่อ (ใช้ Logic เดิมของคุณแต่จะทำงานสมบูรณ์ขึ้น)
-    function validateSelection() {
+    function validateSelection(event) {
         const supervisorName = document.getElementById('supervisor_name').value.trim();
         const teacherName = document.getElementById('teacher_name_input').value.trim();
         const teacherPid = document.getElementById('t_pid').value.trim(); 
@@ -155,13 +172,13 @@
         // เช็คว่ามีการกรอกชื่อไหม
         if (supervisorName === '' || teacherName === '') {
             alert('โปรดเลือกข้อมูลผู้นิเทศและผู้รับนิเทศให้ครบถ้วนก่อนดำเนินการต่อ');
-            return false; 
+            event.preventDefault(); // หยุดการ submit ฟอร์ม
+            return false;
         }
         
-        // ⭐ เช็คจุดสำคัญ: ชื่ออาจจะมี แต่รหัสบัตรประชาชน (t_pid) ว่างเปล่าหรือไม่?
-        // (ถ้าพิมพ์มั่ว t_pid จะถูกเคลียร์เป็นค่าว่าง ทำให้เข้าเงื่อนไขนี้และไปต่อไม่ได้)
         if (teacherPid === '') { 
             alert('ชื่อผู้รับนิเทศไม่ถูกต้อง โปรดเลือกจากรายชื่อที่ระบบแนะนำเท่านั้น');
+            event.preventDefault(); // หยุดการ submit ฟอร์ม
             return false;
         }
 

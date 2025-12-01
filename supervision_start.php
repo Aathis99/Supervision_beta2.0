@@ -7,8 +7,11 @@ if (isset($_GET['edit']) && $_GET['edit'] == 'true' && isset($_SESSION['inspecti
     // ถ้าใช่, ให้ใช้ข้อมูลจาก Session
     $inspection_data = $_SESSION['inspection_data'];
 } else {
-    // ถ้าไม่ใช่ (เข้าหน้าครั้งแรก) หรือไม่มีข้อมูลใน Session, ให้ล้าง Session และตั้งค่าเป็น null
-    session_unset(); // ล้างข้อมูลเก่าทิ้งทั้งหมด
+    // ถ้าไม่ใช่ (เข้าหน้าครั้งแรก) หรือไม่มีข้อมูลใน Session, ให้ล้างเฉพาะข้อมูลการนิเทศเก่า และตั้งค่าเป็น null
+    // ⭐️ แก้ไข: เปลี่ยนจาก session_unset() เป็นการ unset เฉพาะ key ที่ต้องการ
+    // เพื่อป้องกันไม่ให้ข้อมูลการ login หายไป
+    unset($_SESSION['inspection_data']);
+
     $inspection_data = null;
 }
 

@@ -1,7 +1,7 @@
 <?php
-// fetch_teacher.php (ฉบับแก้ไข: ตัดปัญหาเรื่อง View และ Case Sensitivity)
+// fetch_teacher.php
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 require_once 'config/db_connect.php'; 
 
 // ตรวจสอบการเชื่อมต่อ Database
@@ -11,74 +11,76 @@ if ($conn->connect_error) {
 }
 
 // ----------------------------------------------------------------------
-// โหมด 1: ดึงข้อมูลเฉพาะบุคคลเมื่อเลือกชื่อจาก Dropdown (รับค่าเป็น full_name)
+// โหมด 1: ดึงข้อมูลครูรายบุคคล (เมื่อเลือกชื่อจาก Dropdown/Datalist)
+// ⭐️ แก้ไข: เปลี่ยนเป็นรับ t_pid เพื่อความแม่นยำ
 // ----------------------------------------------------------------------
-if (isset($_GET['full_name'])) {
+if (isset($_GET['t_pid'])) {
     
-    // แยกส่วนประกอบของชื่อเต็ม (คำนำหน้า ชื่อ นามสกุล)
-    $full_name_parts = explode(' ', $_GET['full_name'], 3); // แบ่งเป็น 3 ส่วน
+    $t_pid = $conn->real_escape_string($_GET['t_pid']);
     
-    // ⭐️ แก้ไข SQL: ยกเลิกการ JOIN view_teacher_core_groups 
-    // และใส่ Logic การจัดกลุ่มสาระลงไปตรงนี้แทน (ตัดปัญหาเรื่อง View บน Server พัง)
+    // SQL query to fetch teacher details by full name
     $sql = "SELECT 
                 t.t_pid, 
                 t.adm_name, 
                 s.SchoolName,
-                CASE 
-                    WHEN t.learning_group like '%ภาษาไทย%' THEN 'กลุ่มสาระการเรียนรู้ภาษาไทย'
-                    WHEN t.learning_group like '%คณิตศาสตร์%' THEN 'กลุ่มสาระการเรียนรู้คณิตศาสตร์'
-                    WHEN t.learning_group REGEXP 'วิทยาศาสตร์|เคมี|ฟิสิกส์|ชีววิทยา|คอมพิวเตอร์|เทคโนโลยี|โลก ดาราศาสตร์' THEN 'กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี'
-                    WHEN t.learning_group like '%สังคม%' OR t.learning_group like '%ประวัติศาสตร์%' OR t.learning_group like '%ภูมิศาสตร์%' THEN 'กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม'
-                    WHEN t.learning_group REGEXP 'สุขศึกษา|พลศึกษา|พละ' THEN 'กลุ่มสาระการเรียนรู้สุขศึกษาและพลศึกษา'
-                    WHEN t.learning_group REGEXP 'ศิลป|ดนตรี|นาฎศิลป์|ทัศนศิลป์' THEN 'กลุ่มสาระการเรียนรู้ศิลปะ'
-                    WHEN t.learning_group REGEXP 'การงาน|เกษตร|คหกรรม|อุตสาหกรรม|พณิชยกรรม|บริหารธุรกิจ' THEN 'กลุ่มสาระการเรียนรู้การงานอาชีพ'
-                    WHEN t.learning_group REGEXP 'อังกฤษ|จีน|ญี่ปุ่น|ฝรั่งเศส|เกาหลี|ต่างประเทศ' THEN 'กลุ่มสาระการเรียนรู้ภาษาต่างประเทศ'
-                    WHEN t.learning_group like '%แนะแนว%' THEN 'กิจกรรมพัฒนาผู้เรียน' 
-                    ELSE 'อื่นๆ' 
-                END AS core_learning_group
+                vtcg.core_learning_group AS learning_group_name
             FROM teacher t
             LEFT JOIN school s ON t.school_id = s.school_id
-            WHERE t.t_pid = '$t_pid_search'";
+            LEFT JOIN view_teacher_core_groups vtcg ON t.t_pid = vtcg.t_pid
+            WHERE t.t_pid = '$t_pid'
+            LIMIT 1";
             
-        $result = $conn->query($sql);
-
-    // เพิ่มการดักจับ Error ของ SQL
+            
+    $result = $conn->query($sql);
+    
     if (!$result) {
         echo json_encode(['success' => false, 'message' => 'SQL Error: ' . $conn->error]);
         exit;
     }
-
+    
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        
         echo json_encode(['success' => true, 'data' => [
             't_pid' => $row['t_pid'], 
             'adm_name' => $row['adm_name'], 
-            'learning_group' => $row['core_learning_group'],
+            'learning_group' => $row['learning_group_name'] ?? 'ไม่ระบุกลุ่มสาระ', // Use null coalescing operator for default value
             'school_name' => $row['SchoolName']
         ]]);
         
     } else {
-        echo json_encode(['success' => false, 'message' => 'ไม่พบข้อมูลครูคนนี้ในระบบ (PID: ' . $t_pid . ')']);
+        echo json_encode(['success' => false, 'message' => 'ไม่พบข้อมูลครูสำหรับรหัส: ' . $t_pid]);
     }
 
 // ----------------------------------------------------------------------
-// โหมด 2: ดึงรายชื่อเต็มสำหรับ Datalist
+// โหมด 2: ดึงรายชื่อครูทั้งหมด (สำหรับสร้างตัวเลือกใน Datalist)
 // ----------------------------------------------------------------------
 } else if (isset($_GET['action']) && $_GET['action'] == 'get_names') {
-    $sql_names = "SELECT CONCAT(IFNULL(PrefixName, ''), ' ', Fname, ' ', Lname) AS full_name_display 
+    
+    $sql_names = "SELECT t_pid, CONCAT(IFNULL(PrefixName, ''), ' ', Fname, ' ', Lname) AS full_name_display 
                   FROM teacher 
+                  WHERE school_id IS NOT NULL
                   ORDER BY Fname ASC"; 
+                  
     
     $result_names = $conn->query($sql_names);
     
-    $names = [];
-    while ($row = $result_names->fetch_assoc()) {
-        $names[] = trim($row['full_name_display']); 
+    if (!$result_names) {
+        echo json_encode([]);
+        exit;
     }
+
+    $names = [];
+    if ($result_names->num_rows > 0) {
+        while ($row = $result_names->fetch_assoc()) {
+            $names[] = $row;
+        }
+    }
+
     echo json_encode($names);
 
 } else {
-    echo json_encode(['success' => false, 'message' => 'ไม่มีพารามิเตอร์การค้นหา']);
+    echo json_encode(['success' => false, 'message' => 'ไม่มีพารามิเตอร์การค้นหาที่ถูกต้อง']);
 }
+
+$conn->close();
 ?>
