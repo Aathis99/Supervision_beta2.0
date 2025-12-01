@@ -69,7 +69,7 @@ if (!$inspection_data) {
                 ?>
                 <!-- ⭐️ เพิ่มปุ่มย้อนกลับ ⭐️ -->
                 <div class="text-center mt-4">
-                    <a href="supervision_start.php" class="btn btn-secondary">
+                    <a href="supervision_start.php?edit=true" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> ย้อนกลับเพื่อแก้ไขข้อมูล
                     </a>
                 </div>
