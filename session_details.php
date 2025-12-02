@@ -213,7 +213,16 @@ $conn->close();
                                                 
                                                 <?php if (!$is_supervisor): ?>
                                                     <?php if ($row['status'] == 0): ?>
-                                                        <a href="#" class="btn btn-sm btn-warning" title="ประเมิน">
+                                                        <?php
+                                                            // ⭐️ FIX: แก้ไข Path และสร้าง URL สำหรับส่ง Composite Key ไปยังหน้าประเมิน
+                                                            $satisfaction_url = "forms/satisfaction_form.php?" . http_build_query([
+                                                                's_pid' => $row['supervisor_p_id'],
+                                                                't_pid' => $row['teacher_t_pid'],
+                                                                'sub_code' => $row['subject_code'],
+                                                                'time' => $row['inspection_time']
+                                                            ]);
+                                                        ?>
+                                                        <a href="<?php echo $satisfaction_url; ?>" class="btn btn-sm btn-warning" title="ประเมินความพึงพอใจ">
                                                             <i class="fas fa-star"></i> ประเมิน
                                                         </a>
                                                     <?php else: ?>

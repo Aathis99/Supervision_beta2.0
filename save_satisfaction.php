@@ -1,101 +1,100 @@
 <?php
 // ไฟล์: save_satisfaction.php
 session_start();
-require_once 'config/db_connect.php';
+require_once 'config/db_connect.php'; // ⭐️ FIX: เปลี่ยนเป็น '../config/db_connect.php' เพราะไฟล์นี้อยู่ใน forms/
 
-function redirect_with_error($message) {
-    $_SESSION['message'] = $message;
-    $_SESSION['message_type'] = 'danger'; // 'danger' for bootstrap alert-danger
-    header("Location: history.php"); // Redirect to a user-friendly page
+function redirect_with_flash_message($message, $type = 'danger', $location = '../history.php') {
+    $_SESSION['flash_message'] = $message;
+    $_SESSION['flash_message_type'] = $type;
+    header("Location: " . $location);
     exit();
 }
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    redirect_with_error("Invalid request method.");
+    redirect_with_flash_message("Invalid request method.");
 }
 
-if (!isset($_SESSION['satisfaction_data']['session_id']) || !isset($_POST['ratings'])) {
-    redirect_with_error("Session หมดอายุหรือไม่พบข้อมูลการนิเทศ กรุณาเริ่มต้นใหม่");
-}
-
-$session_id = $_SESSION['satisfaction_data']['session_id'];
+// ⭐️ FIX: รับค่า Composite Key และข้อมูลอื่นๆ จาก POST โดยตรง
+$s_pid = $_POST['s_pid'] ?? null;
+$t_pid = $_POST['t_pid'] ?? null;
+$sub_code = $_POST['sub_code'] ?? null;
+$time = $_POST['time'] ?? null;
 $ratings = $_POST['ratings'] ?? [];
 $overall_suggestion = trim($_POST['overall_suggestion'] ?? '');
 
-if (empty($ratings)) {
-    redirect_with_error("กรุณาให้คะแนนความพึงพอใจอย่างน้อยหนึ่งข้อ");
+// ตรวจสอบข้อมูลบังคับ
+if (!$s_pid || !$t_pid || !$sub_code || !$time || empty($ratings)) {
+    redirect_with_flash_message("ข้อมูลที่จำเป็นสำหรับการบันทึกไม่ครบถ้วน กรุณาลองใหม่อีกครั้ง");
 }
 
 // เริ่มต้น Transaction
 $conn->begin_transaction();
 
 try {
-    // ⭐️ ตรวจสอบก่อนว่าเคยประเมินไปแล้วหรือยัง เพื่อป้องกันการส่งข้อมูลซ้ำ
-    $stmt_check = $conn->prepare("SELECT satisfaction_submitted FROM supervision_sessions WHERE id = ?");
-    $stmt_check->bind_param("i", $session_id);
+    // ⭐️ FIX: ตรวจสอบสถานะการประเมินโดยใช้ Composite Key
+    $stmt_check = $conn->prepare("SELECT 1 FROM satisfaction_answers WHERE supervisor_p_id = ? AND teacher_t_pid = ? AND subject_code = ? AND inspection_time = ? LIMIT 1");
+    $stmt_check->bind_param("sssi", $s_pid, $t_pid, $sub_code, $time);
     $stmt_check->execute();
-    $result_check = $stmt_check->get_result()->fetch_assoc();
+    $result_check = $stmt_check->get_result();
     $stmt_check->close();
 
-    if ($result_check && $result_check['satisfaction_submitted'] == 1) {
+    if ($result_check->num_rows > 0) {
         throw new Exception("การนิเทศครั้งนี้ได้รับการประเมินความพึงพอใจไปแล้ว");
     }
 
-    // 1. บันทึกคะแนนแต่ละข้อ
-    $sql_answer = "INSERT INTO satisfaction_answers (session_id, question_id, rating) VALUES (?, ?, ?)";
+    // 1. ⭐️ FIX: บันทึกคะแนนแต่ละข้อลงตาราง satisfaction_answers โดยใช้ Composite Key
+    $sql_answer = "INSERT INTO satisfaction_answers 
+                   (supervisor_p_id, teacher_t_pid, subject_code, inspection_time, question_id, rating) 
+                   VALUES (?, ?, ?, ?, ?, ?)";
     $stmt_answer = $conn->prepare($sql_answer);
+    if (!$stmt_answer) throw new Exception("Prepare failed (answers): " . $conn->error);
 
     foreach ($ratings as $question_id => $rating) {
         $q_id = (int)$question_id;
         $rate_score = (int)$rating;
-        $stmt_answer->bind_param("iii", $session_id, $q_id, $rate_score);
-        $stmt_answer->execute();
+        // Bind: sssiii (string, string, string, int, int, int)
+        $stmt_answer->bind_param("sssiii", $s_pid, $t_pid, $sub_code, $time, $q_id, $rate_score);
+        if (!$stmt_answer->execute()) {
+            throw new Exception("Execute failed (answer QID: $q_id): " . $stmt_answer->error);
+        }
     }
     $stmt_answer->close();
 
-    // 2. อัปเดตตาราง supervision_sessions เพื่อเก็บข้อเสนอแนะ และสถานะการประเมิน
-    // (เพิ่มคอลัมน์ satisfaction_suggestion และ satisfaction_submitted)
+    // 2. ⭐️ FIX: อัปเดตตาราง supervision_sessions เพื่อเก็บข้อเสนอแนะ และวันที่ประเมิน โดยใช้ Composite Key
     $sql_session_update = "UPDATE supervision_sessions 
                            SET satisfaction_suggestion = ?, 
-                               satisfaction_submitted = 1,
                                satisfaction_date = NOW()
-                           WHERE id = ?";
+                           WHERE supervisor_p_id = ? AND teacher_t_pid = ? AND subject_code = ? AND inspection_time = ?";
     $stmt_session = $conn->prepare($sql_session_update);
-    $stmt_session->bind_param("si", $overall_suggestion, $session_id);
-    $stmt_session->execute();
+    if (!$stmt_session) throw new Exception("Prepare failed (session update): " . $conn->error);
+
+    // Bind: ssssi (string, string, string, string, int)
+    $stmt_session->bind_param("ssssi", $overall_suggestion, $s_pid, $t_pid, $sub_code, $time);
+    if (!$stmt_session->execute()) {
+        throw new Exception("Execute failed (session update): " . $stmt_session->error);
+    }
     $stmt_session->close();
 
     // ยืนยัน Transaction
     $conn->commit();
 
-    // ดึง teacher_t_pid เพื่อใช้ในการ redirect กลับไปหน้า session_details.php
-    $stmt_get_teacher = $conn->prepare("SELECT teacher_t_pid FROM supervision_sessions WHERE id = ?");
-    $stmt_get_teacher->bind_param("i", $session_id);
-    $stmt_get_teacher->execute();
-    $teacher_pid_result = $stmt_get_teacher->get_result()->fetch_assoc();
-    $teacher_pid = $teacher_pid_result['teacher_t_pid'];
-    $stmt_get_teacher->close();
+    // ⭐️ FIX: สร้าง URL สำหรับ Redirect กลับไปที่หน้าฟอร์มเดิมเพื่อแสดงข้อความสำเร็จ
+    $redirect_url = "satisfaction_form.php?" . http_build_query([
+        's_pid' => $s_pid,
+        't_pid' => $t_pid,
+        'sub_code' => $sub_code,
+        'time' => $time
+    ]);
 
-    // ล้าง session และเปลี่ยนเส้นทาง
-    unset($_SESSION['satisfaction_data']);
-    
-    // ส่งกลับไปหน้าประวัติพร้อมข้อความสำเร็จ
-    $_SESSION['message'] = 'บันทึกข้อมูลความพึงพอใจเรียบร้อยแล้ว';
-    $_SESSION['message_type'] = 'success';
-
-    // สร้างฟอร์มเพื่อ POST กลับไปหน้า session_details.php
-    echo '<!DOCTYPE html><html><head><title>Redirecting...</title></head><body>';
-    echo '<form id="redirectForm" method="POST" action="session_details.php">';
-    echo '<input type="hidden" name="teacher_pid" value="' . htmlspecialchars($teacher_pid) . '">';
-    echo '</form>';
-    echo '<script type="text/javascript">document.getElementById("redirectForm").submit();</script>';
-    echo '</body></html>';
-
-    exit();
+    // ไม่จำเป็นต้องใช้ flash message แล้ว เพราะหน้า form จะตรวจสอบสถานะและแสดงผลเอง
+    header("Location: " . $redirect_url);
+    exit;
 
 } catch (Exception $e) {
     $conn->rollback();
-    redirect_with_error("ไม่สามารถบันทึกข้อมูลได้: " . $e->getMessage()); // Message will be shown on history.php
+    error_log("Save Satisfaction Error: " . $e->getMessage()); // บันทึก error ลง log ของ server
+    // ส่งกลับไปหน้าหลักพร้อมข้อความ error
+    redirect_with_flash_message("ไม่สามารถบันทึกข้อมูลได้: " . $e->getMessage());
 }
 
 $conn->close();
