@@ -90,8 +90,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $conn->commit();
 
-        unset($_SESSION['inspection_data']);
-
         // --- 4. ส่วนจัดการการอัพโหลดรูปภาพ (เพิ่มเข้ามาใหม่) ---
         $uploadDir = 'uploads/';
         $maxUploads = 2;
@@ -145,6 +143,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
+        // ⭐️ ย้ายการล้าง session มาไว้ตรงนี้ หลังจากทุกอย่างสำเร็จ
+        unset($_SESSION['inspection_data']);
+
         // ⭐️ ตั้งค่าข้อความแจ้งเตือนสำหรับแสดงผลในหน้า history.php
         $_SESSION['flash_message'] = 'บันทึกข้อมูลการนิเทศเรียบร้อยแล้ว';
 
@@ -158,5 +159,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-$conn->close(); // ⭐️ FIX: ย้ายการปิด connection มาไว้ท้ายสุดของไฟล์
+//$conn->close(); // ⭐️ ปิดการเชื่อมต่อท้ายสุด (ย้ายมาจากด้านบน)
 ?>

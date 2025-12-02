@@ -52,6 +52,14 @@ if (!$inspection_data) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
+    <?php if ($error_message === ''): ?>
+        <!-- ปุ่มย้อนกลับ (นอกฟอร์ม) -->
+        <div class="container mt-4">
+            <a href="supervision_start.php?edit=true" class="btn btn-danger">
+                <i class="fas fa-arrow-left"></i> ย้อนกลับ
+            </a>
+        </div>
+    <?php endif; ?>
     <div class="main-card card my-5">
         <div class="form-header card-header text-center bg-success text-white">
             <i class="fas fa-check-circle"></i> <span class="fw-bold">แบบบันทึกข้อมูลการนิเทศ</span>
@@ -63,12 +71,6 @@ if (!$inspection_data) {
                     <a href="index.php" class="btn btn-danger">ไปยังแบบฟอร์มเริ่มต้น</a>
                 </div>
             <?php else: ?>
-                <!-- ⭐️ ย้ายปุ่มย้อนกลับมาไว้ด้านบน ⭐️ -->
-                <div class="d-flex justify-content-end mb-3">
-                    <a href="supervision_start.php?edit=true" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> ย้อนกลับเพื่อแก้ไขข้อมูล
-                    </a>
-                </div>
                 <?php
                 // รวมฟอร์ม KPI ทั้งหมดเข้ามาแสดงผลในหน้านี้
                 include 'forms/kpi_form.php';

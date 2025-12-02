@@ -1,61 +1,70 @@
 <?php
 // ไฟล์: history.php
-// ⭐️ 1. เริ่ม Session แต่ไม่บังคับล็อกอิน
-// ทำให้ทุกคนสามารถเข้าดูหน้านี้ได้
+// ⭐️ 1. เริ่ม Session 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 require_once 'config/db_connect.php';
 
-// ตรวจสอบค่า search_name: ถ้ามีค่าเข้ามา ให้ Trim ถ้าไม่มีค่า (หรือเข้าหน้าครั้งแรก) ให้เป็นค่าว่าง
+// ตรวจสอบค่า search_name
 $search_name = isset($_GET['search_name']) ? trim($_GET['search_name']) : '';
 $results = [];
 
-// SQL พื้นฐานสำหรับดึงข้อมูล
-// ⭐️ ดึงข้อมูลที่จำเป็นตามภาพ: วันที่, ชื่อครู, โรงเรียน, ชื่อผู้นิเทศ, รายวิชา, เวลา, ปุ่มดูรายงาน
-// ⭐️ ปรับปรุง SQL: ใช้ Subquery เพื่อหาการนิเทศครั้งล่าสุดของแต่ละคน แล้วค่อย JOIN ข้อมูลที่เหลือ
-$sql = "SELECT
+// ⭐️ SQL ใหม่: รวมข้อมูลจาก supervision_sessions และ quick_win ⭐️
+// หลักการ:
+// 1. เลือกครู (teacher) ที่มีประวัติอยู่ในตาราง supervision_sessions หรือ quick_win
+// 2. ใช้ Subquery นับจำนวนแยกแต่ละประเภท และหาผลรวม
+// 3. ใช้ Subquery หาวันที่ล่าสุดของแต่ละประเภท แล้วใช้ GREATEST เพื่อหาอันที่ล่าสุดที่สุดมาเรียงลำดับ
+
+$sql = "SELECT 
             t.t_pid AS teacher_t_pid,
-            CONCAT(t.PrefixName, t.fname, ' ', t.lname) AS teacher_full_name,
+            CONCAT(IFNULL(t.PrefixName,''), t.fname, ' ', t.lname) AS teacher_full_name,
             t.adm_name AS teacher_position,
             s_school.SchoolName AS t_school,
-            (SELECT COUNT(*) FROM supervision_sessions WHERE teacher_t_pid = t.t_pid) AS supervision_count
-        FROM
+            
+            -- นับจำนวนการนิเทศปกติ
+            (SELECT COUNT(*) FROM supervision_sessions WHERE teacher_t_pid = t.t_pid) AS count_normal,
+            
+            -- นับจำนวน Quick Win
+            (SELECT COUNT(*) FROM quick_win WHERE t_id = t.t_pid) AS count_quickwin,
+            
+            -- หาวันที่ล่าสุด (เปรียบเทียบระหว่าง ปกติ กับ Quick Win)
+            GREATEST(
+                IFNULL((SELECT MAX(supervision_date) FROM supervision_sessions WHERE teacher_t_pid = t.t_pid), '0000-00-00'),
+                IFNULL((SELECT MAX(supervision_date) FROM quick_win WHERE t_id = t.t_pid), '0000-00-00')
+            ) AS latest_date
+
+        FROM teacher t
+        LEFT JOIN school s_school ON t.school_id = s_school.school_id
+        WHERE 
+            -- เงื่อนไข: ต้องมีประวัติอย่างใดอย่างหนึ่ง
             (
-                SELECT 
-                    teacher_t_pid, 
-                    MAX(supervision_date) AS max_date
-                FROM supervision_sessions
-                GROUP BY teacher_t_pid
-            ) AS latest_sessions
-        JOIN
-            supervision_sessions ss_latest ON latest_sessions.teacher_t_pid = ss_latest.teacher_t_pid AND latest_sessions.max_date = ss_latest.supervision_date
-        LEFT JOIN
-            teacher t ON ss_latest.teacher_t_pid = t.t_pid
-        LEFT JOIN
-            school s_school ON t.school_id = s_school.school_id
+                t.t_pid IN (SELECT teacher_t_pid FROM supervision_sessions) 
+                OR 
+                t.t_pid IN (SELECT t_id FROM quick_win)
+            )
         ";
 
 $params = [];
 $types = '';
 
-// ⭐️ เงื่อนไขการค้นหา: จะทำการค้นหาก็ต่อเมื่อ $search_name ไม่ใช่ค่าว่างเท่านั้น ⭐️
+// ⭐️ เงื่อนไขการค้นหา ⭐️
 if (!empty($search_name)) {
-    // จัดการกับช่องว่างที่อาจมีหลายช่องติดกัน ให้เหลือเพียงช่องว่างเดียว
     $normalized_search = preg_replace('/\s+/', ' ', $search_name);
-    // กรณีมีการค้นหา: เพิ่ม WHERE clause
     $search_term = "%" . $normalized_search . "%";
-    $sql .= " WHERE CONCAT(t.fname, ' ', t.lname) LIKE ? OR t.adm_name LIKE ?";
+    
+    // ค้นหาจากชื่อ หรือ ตำแหน่ง
+    $sql .= " AND (CONCAT(IFNULL(t.PrefixName,''), t.fname, ' ', t.lname) LIKE ? OR t.adm_name LIKE ?)";
     $params = [$search_term, $search_term];
     $types = "ss";
 }
 
-// ⭐️ เรียงลำดับจากวันที่ล่าสุด ⭐️
-$sql .= " ORDER BY latest_sessions.max_date DESC";
+// ⭐️ เรียงลำดับจากวันที่ล่าสุด (ไม่ว่าจะมาจากตารางไหน) ⭐️
+$sql .= " ORDER BY latest_date DESC";
 
-// ⭐️ จำกัดผลลัพธ์ให้แสดง 5 รายการล่าสุดเฉพาะเมื่อไม่ได้ค้นหา ⭐️
+// ⭐️ จำกัดผลลัพธ์ ⭐️
 if (empty($search_name)) {
-    $sql .= " LIMIT 5";
+    $sql .= " LIMIT 10"; // ปรับเป็น 10 รายการเพื่อให้เห็นข้อมูลชัดขึ้น (เดิม 5)
 }
 
 // เตรียมและดำเนินการสอบถาม
@@ -82,20 +91,22 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ประวัติการนิเทศ</title>
+    <title>ประวัติการนิเทศ (รวม Quick Win)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        /* สไตล์สำหรับตาราง (เพื่อให้อ่านง่ายขึ้น) */
         .table-custom th {
             background-color: #007bff;
             color: white;
             vertical-align: middle;
         }
-
         .table-custom td {
             vertical-align: middle;
+        }
+        .badge-qw {
+            background-color: #ffc107;
+            color: #000;
         }
     </style>
 </head>
@@ -103,7 +114,9 @@ $conn->close();
 <body>
     <div class="container mt-5">
         <div class="card shadow-lg p-4">
-            <h2 class="card-title text-center mb-4"><i class="fas fa-history"></i> ประวัติการนิเทศ</h2>
+            <h2 class="card-title text-center mb-4">
+                <i class="fas fa-history"></i> ประวัติการนิเทศ และ Quick Win
+            </h2>
 
             <form method="GET" action="history.php" class="mb-4">
                 <div class="input-group">
@@ -113,13 +126,11 @@ $conn->close();
                         <i class="fas fa-redo"></i>
                     </a>
                 </div>
-                <small class="form-text text-muted">หากไม่กรอกข้อมูลและกดปุ่ม 'ค้นหา' จะแสดงรายการทั้งหมด</small>
+                <small class="form-text text-muted">แสดงข้อมูลล่าสุดรวมทั้งการนิเทศปกติและ Quick Win</small>
             </form>
 
-            <!-- ⭐️ 2. เปลี่ยนปุ่มตามสถานะการล็อกอิน -->
             <?php if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true): ?>
                 <div class="d-flex justify-content-end align-items-center mb-3 gap-2">
-                    <!-- ส่วนของผู้นิเทศ (เมื่อล็อกอิน) -->
                     <a href="supervision_start.php" class="btn btn-success">
                         <i class="fas fa-plus-circle"></i> บันทึกการนิเทศ
                     </a>
@@ -145,31 +156,45 @@ $conn->close();
                             <th scope="col">ชื่อผู้รับนิเทศ</th>
                             <th scope="col">โรงเรียน</th>
                             <th scope="col">ตำแหน่ง</th>
-                            <th scope="col" class="text-center">จำนวนครั้งที่นิเทศ</th>
+                            <th scope="col" class="text-center">ประวัติการนิเทศ (ครั้ง)</th>
+                            <!-- <th scope="col" class="text-center">วันที่ล่าสุด</th> -->
                             <th scope="col" class="text-center" style="width: 10%;">เพิ่มเติม</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($results)) : ?>
                             <tr>
-                                <td colspan="5" class="text-center text-danger fw-bold">
-                                    <?php echo !empty($search_name) ? "ไม่พบข้อมูลการนิเทศที่ตรงกับการค้นหา: \"" . htmlspecialchars($search_name) . "\"" : "ไม่พบประวัติการนิเทศที่บันทึกไว้ในระบบ"; ?>
+                                <td colspan="6" class="text-center text-danger fw-bold">
+                                    <?php echo !empty($search_name) ? "ไม่พบข้อมูลที่ตรงกับการค้นหา: \"" . htmlspecialchars($search_name) . "\"" : "ไม่พบประวัติการนิเทศในระบบ"; ?>
                                 </td>
                             </tr>
                         <?php else : ?>
-                            <?php foreach ($results as $row) : ?>
+                            <?php foreach ($results as $row) : 
+                                // คำนวณผลรวม
+                                $total_count = $row['count_normal'] + $row['count_quickwin'];
+                                // จัดรูปแบบวันที่
+                                $show_date = ($row['latest_date'] == '0000-00-00') ? '-' : date('d/m/Y', strtotime($row['latest_date']));
+                            ?>
                                 <tr>
                                     <td><?php echo htmlspecialchars($row['teacher_full_name']); ?></td>
                                     <td><?php echo htmlspecialchars($row['t_school']); ?></td>
                                     <td><?php echo htmlspecialchars($row['teacher_position']); ?></td>
+                                    
                                     <td class="text-center">
-                                        <?php echo htmlspecialchars($row['supervision_count']); ?>
+                                        <span class="badge bg-primary rounded-pill fs-6"><?php echo $total_count; ?></span>
+                                        <br>
+                                        <small class="text-muted" style="font-size: 0.8rem;">
+                                            (ปกติ: <?php echo $row['count_normal']; ?>, QW: <?php echo $row['count_quickwin']; ?>)
+                                        </small>
                                     </td>
+
+                                    <!-- <td class="text-center"><?php echo $show_date; ?></td> -->
+
                                     <td class="text-center">
-                                        <form method="POST" action="session_details.php" style="display:inline;">
+                                        <form action="session_details.php" method="POST" style="display: inline;">
                                             <input type="hidden" name="teacher_pid" value="<?php echo $row['teacher_t_pid']; ?>">
-                                            <button type="submit" class="btn btn-sm btn-info" title="ดูประวัติการนิเทศทั้งหมดของครูท่านนี้">
-                                                <i class="fas fa-search-plus"></i>
+                                            <button type="submit" class="btn btn-sm btn-info" title="ดูรายละเอียดประวัติทั้งหมด">
+                                                <i class="fas fa-search-plus"></i> รายละเอียด
                                             </button>
                                         </form>
                                     </td>
@@ -184,20 +209,15 @@ $conn->close();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
-        // ⭐️ เพิ่ม script สำหรับแสดง popup แจ้งเตือน
         document.addEventListener('DOMContentLoaded', function() {
             <?php
             if (isset($_SESSION['flash_message'])) {
-                // แสดง alert ด้วยข้อความใน session
                 echo "alert('" . addslashes($_SESSION['flash_message']) . "');";
-                // ล้าง session ออกไปหลังจากแสดงผลแล้ว เพื่อไม่ให้แสดงซ้ำเมื่อรีเฟรช
                 unset($_SESSION['flash_message']);
             }
             ?>
         });
     </script>
 </body>
-
 </html>

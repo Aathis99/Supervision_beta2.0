@@ -21,7 +21,7 @@ if ($form_type == 3) {
                 school_name AS SchoolName,
                 COUNT(*) AS supervision_count
             FROM
-                view_quick_win_dashboard_all_events
+                quick_win_dashboard
             GROUP BY
                 school_name
             ORDER BY
@@ -67,12 +67,12 @@ if ($form_type == 3) {
     $school_supervision_data = $satisfaction_data;
 
     // 2. สรุปตามตำแหน่ง
-    $sql_position = "SELECT position_rank AS teacher_position, COUNT(*) AS supervised_teacher_count FROM view_quick_win_dashboard_all_events WHERE position_rank IS NOT NULL AND position_rank COLLATE utf8_unicode_ci != '' GROUP BY position_rank ORDER BY supervised_teacher_count DESC";
+    $sql_position = "SELECT position_rank AS teacher_position, COUNT(*) AS supervised_teacher_count FROM quick_win_dashboard WHERE position_rank IS NOT NULL AND position_rank COLLATE utf8_unicode_ci != '' GROUP BY position_rank ORDER BY supervised_teacher_count DESC";
     $result_pos = $conn->query($sql_position);
     if ($result_pos) $position_supervision_data = $result_pos->fetch_all(MYSQLI_ASSOC);
 
     // 3. สรุปตามกลุ่มสาระ
-    $sql_lg = "SELECT core_learning_group AS learning_group, COUNT(*) AS supervised_teacher_count FROM view_quick_win_dashboard_all_events WHERE core_learning_group IS NOT NULL AND core_learning_group COLLATE utf8mb4_unicode_ci != '' GROUP BY core_learning_group ORDER BY supervised_teacher_count DESC";
+    $sql_lg = "SELECT core_learning_group AS learning_group, COUNT(*) AS supervised_teacher_count FROM quick_win_dashboard WHERE core_learning_group IS NOT NULL AND core_learning_group COLLATE utf8mb4_unicode_ci != '' GROUP BY core_learning_group ORDER BY supervised_teacher_count DESC";
     $result_lg = $conn->query($sql_lg);
     if ($result_lg) $lg_supervised_teacher_data = $result_lg->fetch_all(MYSQLI_ASSOC);
 } else {
@@ -243,7 +243,7 @@ $js_background_colors = json_encode($background_colors);
             </div>
         </div>
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <a href="javascript:history.back()" class="btn btn-secondary">
+            <a href="javascript:history.back()" class="btn btn-danger">
                 <i class="fas fa-arrow-left"></i> กลับ
             </a>
             <h1 class="text-center mb-0 flex-grow-1">Dashboard สรุปผลการนิเทศ</h1>

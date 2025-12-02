@@ -1,7 +1,63 @@
 <?php
 // ไฟล์: learning_group_chart.php
-// ส่วนแสดงผลของกราฟสรุปการนิเทศตามกลุ่มสาระการเรียนรู้
+
+require_once '../config/db_connect.php'; 
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // 2. SQL Query ดึงข้อมูลจริง (ใช้ตาราง teacher_core_assignments ที่สร้างไว้)
+    $query = "
+        SELECT
+            tca.core_learning_group AS learning_group, 
+            COUNT(DISTINCT t.t_pid) AS supervised_teacher_count 
+        FROM
+            teacher t
+        INNER JOIN
+            quick_win qw ON t.t_pid = qw.t_id
+        LEFT JOIN
+            teacher_core_assignments tca ON t.t_pid = tca.t_pid
+        WHERE
+            tca.core_learning_group IS NOT NULL 
+        GROUP BY
+            tca.core_learning_group
+        ORDER BY
+            supervised_teacher_count DESC;
+    ";
+
+    // 3. รันคำสั่งและดึงข้อมูล
+    $stmt = $pdo->query($query);
+    $lg_supervision_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 4. เตรียมข้อมูลสำหรับ Chart.js
+    $lg_chart_labels = [];
+    $lg_chart_values = [];
+    
+    foreach ($lg_supervision_data as $data) {
+        $lg_chart_labels[] = $data['learning_group'];
+        $lg_chart_values[] = (int)$data['supervised_teacher_count'];
+    }
+
+    // แปลงข้อมูลเป็น JSON เพื่อส่งให้ JavaScript
+    $json_chart_labels = json_encode($lg_chart_labels, JSON_UNESCAPED_UNICODE);
+    $json_chart_values = json_encode($lg_chart_values, JSON_UNESCAPED_UNICODE);
+
+    // เตรียมสีพื้นหลัง (กำหนดสีให้เพียงพอกับจำนวนข้อมูล)
+    $colors = ['#ffc107', '#0d6efd', '#198754', '#6f42c1', '#dc3545', '#0dcaf0', '#fd7e14', '#20c997'];
+    // ตัดอาเรย์สีให้เท่ากับจำนวนข้อมูลที่มี
+    $js_background_colors = json_encode(array_slice($colors, 0, count($lg_supervision_data)));
+
+} catch (PDOException $e) {
+    // กรณีเชื่อมต่อไม่ได้ ให้แสดง Error หรือค่าว่าง
+    echo '<div class="alert alert-danger">เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล: ' . $e->getMessage() . '</div>';
+    $lg_supervision_data = [];
+    $json_chart_labels = '[]';
+    $json_chart_values = '[]';
+    $js_background_colors = '[]';
+}
 ?>
+
 <div class="card shadow-sm mt-4">
     <div class="card-header card-header-custom text-center" style="background-color: #ffc107;">
         <h2 class="h4 mb-0"><i class="fas fa-book-open"></i> สรุปจำนวนครูที่ได้รับการนิเทศตามกลุ่มสาระ</h2>
@@ -12,6 +68,7 @@
                 <h5 class="card-title text-center mb-3">กราฟแสดงจำนวนครูที่ได้รับการนิเทศ (คน)</h5>
                 <canvas id="learningGroupChart"></canvas>
             </div>
+            
             <div class="col-lg-6">
                 <h5 class="card-title text-center mb-3">ตารางสรุปข้อมูลดิบ</h5>
                 <div class="table-responsive">
@@ -23,12 +80,18 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($lg_supervision_data as $data): ?>
+                            <?php if (count($lg_supervision_data) > 0): ?>
+                                <?php foreach ($lg_supervision_data as $data): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($data['learning_group']); ?></td>
+                                        <td class="text-center"><?php echo $data['supervised_teacher_count']; ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($data['learning_group'] ?? ''); ?></td>
-                                    <td class="text-center"><?php echo $data['supervised_teacher_count'] ?? 0; ?></td>
+                                    <td colspan="2" class="text-center">ไม่พบข้อมูลการนิเทศ</td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -39,13 +102,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // --- กราฟสรุปการนิเทศตามกลุ่มสาระ (Bar Chart) ---
     const lgCtx = document.getElementById('learningGroupChart').getContext('2d');
     
-    // ตรวจสอบและตั้งค่าเริ่มต้นให้กับตัวแปร PHP ที่ถูกส่งมา เพื่อป้องกันข้อผิดพลาด JavaScript
-    const chartLabels = <?php echo $lg_chart_labels ?? '[]'; ?>;
-    const chartValues = <?php echo $lg_chart_values ?? '[]'; ?>;
-    const backgroundColors = <?php echo $js_background_colors ?? '["#ffc107", "#0d6efd", "#198754", "#6f42c1", "#dc3545"]'; ?>;
+    // รับค่าจาก PHP
+    const chartLabels = <?php echo $json_chart_labels; ?>;
+    const chartValues = <?php echo $json_chart_values; ?>;
+    const backgroundColors = <?php echo $js_background_colors; ?>;
 
     new Chart(lgCtx, {
         type: 'bar',
@@ -55,14 +117,36 @@ document.addEventListener('DOMContentLoaded', function () {
                 label: 'จำนวนครูที่ได้รับการนิเทศ (คน)',
                 data: chartValues,
                 backgroundColor: backgroundColors,
-                borderColor: backgroundColors.map(color => color.replace('0.7', '1')),
+                borderColor: backgroundColors.map(color => color.replace('0.7', '1')), // ปรับสีขอบให้เข้มขึ้นเล็กน้อย (ถ้าสีเดิมเป็น rgba) หรือใช้สีเดิม
                 borderWidth: 1
             }]
         },
         options: {
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1 // บังคับให้แกน Y แสดงเป็นจำนวนเต็ม
+                    }
+                },
+                x: {
+                    ticks: {
+                        autoSkip: false, // แสดง label ทุกอัน ไม่ซ่อนถ้าที่แคบ
+                        maxRotation: 45, // เอียงตัวหนังสือถ้าชื่อยาว
+                        minRotation: 0
+                    }
+                }
+            },
             responsive: true,
-            plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'top', color: '#363636', font: { weight: 'bold' } } }
+            plugins: {
+                legend: { display: false }, // ซ่อน Legend เพราะมี Label กำกับอยู่แล้ว
+                datalabels: { // ต้องมี plugin datalabels หรือลบส่วนนี้ออกถ้าไม่ได้ใช้
+                    anchor: 'end',
+                    align: 'top',
+                    color: '#363636',
+                    font: { weight: 'bold' }
+                }
+            }
         }
     });
 });

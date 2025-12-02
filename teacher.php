@@ -109,13 +109,16 @@
         const datalist = document.getElementById('teacher_names_list');
         fetch('fetch_teacher.php?action=get_names')
             .then(response => response.json())
-            .then(teachers => {
-                teachers.forEach(teacher => {
-                    const option = document.createElement('option');
-                    option.value = teacher.full_name_display;
-                    option.setAttribute('data-pid', teacher.t_pid);
-                    datalist.appendChild(option);
-                });
+            .then(result => {
+                // ⭐️ แก้ไข: ตรวจสอบว่า request สำเร็จและมีข้อมูล data ที่เป็น array
+                if (result.success && Array.isArray(result.data)) {
+                    result.data.forEach(teacher => {
+                        const option = document.createElement('option');
+                        option.value = teacher.full_name_display;
+                        option.setAttribute('data-pid', teacher.t_pid);
+                        datalist.appendChild(option);
+                    });
+                }
 
                 // หลังจากเติมรายชื่อเสร็จ, ตรวจสอบว่ามีค่าที่เคยเลือกไว้หรือไม่
                 const initialTeacherName = document.getElementById('teacher_name_input').value;

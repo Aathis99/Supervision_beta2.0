@@ -51,9 +51,11 @@ $conn->close();
 </head>
 <body>
 
+
 <div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-md-10">
+            <a href="javascript:history.back()" style="position: absolute; top: 15px; left: 15px; z-index: 1030;" class="btn btn-danger"><i class="fas fa-arrow-left"></i> ย้อนกลับ</a>
             <div class="card shadow-lg">
                 <div class="card-header bg-danger text-white text-center">
                     <i class="fas fa-bullseye"></i> 

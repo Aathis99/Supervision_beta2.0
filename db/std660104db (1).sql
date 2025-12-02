@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.1.1
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Dec 01, 2025 at 04:13 AM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Host: localhost
+-- Generation Time: Dec 01, 2025 at 09:27 PM
+-- Server version: 8.0.44-0ubuntu0.22.04.1
+-- PHP Version: 7.4.33
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `sesa_db`
+-- Database: `std660104db`
 --
 
 -- --------------------------------------------------------
@@ -28,10 +28,18 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `certificate_log` (
-  `id` int(11) NOT NULL,
-  `session_id` int(11) NOT NULL,
-  `generated_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `id` int NOT NULL,
+  `session_id` int NOT NULL,
+  `generated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `certificate_log`
+--
+
+INSERT INTO `certificate_log` (`id`, `session_id`, `generated_at`) VALUES
+(1, 4, '2025-12-01 09:23:56'),
+(2, 5, '2025-12-01 09:24:51');
 
 -- --------------------------------------------------------
 
@@ -40,10 +48,10 @@ CREATE TABLE `certificate_log` (
 --
 
 CREATE TABLE `images` (
-  `id` int(11) NOT NULL,
-  `session_id` int(11) DEFAULT NULL,
-  `file_name` varchar(255) NOT NULL,
-  `uploaded_on` datetime NOT NULL DEFAULT current_timestamp()
+  `id` int NOT NULL,
+  `session_id` int DEFAULT NULL,
+  `file_name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `uploaded_on` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -53,12 +61,66 @@ CREATE TABLE `images` (
 --
 
 CREATE TABLE `kpi_answers` (
-  `id` int(11) NOT NULL,
-  `session_id` int(11) NOT NULL COMMENT 'FK to supervision_sessions.id',
-  `question_id` int(11) NOT NULL COMMENT 'FK to kpi_questions.id',
-  `rating_score` int(1) DEFAULT NULL,
-  `comment` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+  `id` int NOT NULL,
+  `session_id` int NOT NULL COMMENT 'FK to supervision_sessions.id',
+  `question_id` int NOT NULL COMMENT 'FK to kpi_questions.id',
+  `rating_score` int DEFAULT NULL,
+  `comment` text
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Dumping data for table `kpi_answers`
+--
+
+INSERT INTO `kpi_answers` (`id`, `session_id`, `question_id`, `rating_score`, `comment`) VALUES
+(73, 4, 1, 3, 'aaaa'),
+(74, 4, 2, 2, 'aa'),
+(75, 4, 3, 3, ''),
+(76, 4, 4, 2, ''),
+(77, 4, 5, 2, ''),
+(78, 4, 6, 3, ''),
+(79, 4, 7, 2, ''),
+(80, 4, 8, 1, ''),
+(81, 4, 9, 1, ''),
+(82, 4, 10, 0, ''),
+(83, 4, 11, 1, ''),
+(84, 4, 12, 1, ''),
+(85, 4, 13, 0, ''),
+(86, 4, 14, 2, ''),
+(87, 4, 15, 0, ''),
+(88, 4, 16, 0, ''),
+(89, 4, 17, 0, ''),
+(90, 4, 18, 3, ''),
+(91, 4, 19, 1, ''),
+(92, 4, 20, 0, ''),
+(93, 4, 21, 3, ''),
+(94, 4, 22, 2, ''),
+(95, 4, 23, 2, ''),
+(96, 4, 24, 1, 'ฟหก'),
+(97, 5, 1, 3, ''),
+(98, 5, 2, 3, ''),
+(99, 5, 3, 2, ''),
+(100, 5, 4, 0, ''),
+(101, 5, 5, 3, ''),
+(102, 5, 6, 2, ''),
+(103, 5, 7, 2, ''),
+(104, 5, 8, 0, ''),
+(105, 5, 9, 3, ''),
+(106, 5, 10, 2, ''),
+(107, 5, 11, 1, ''),
+(108, 5, 12, 0, ''),
+(109, 5, 13, 3, ''),
+(110, 5, 14, 0, ''),
+(111, 5, 15, 2, ''),
+(112, 5, 16, 0, ''),
+(113, 5, 17, 2, ''),
+(114, 5, 18, 3, ''),
+(115, 5, 19, 3, ''),
+(116, 5, 20, 3, ''),
+(117, 5, 21, 0, ''),
+(118, 5, 22, 3, ''),
+(119, 5, 23, 2, ''),
+(120, 5, 24, 0, '');
 
 -- --------------------------------------------------------
 
@@ -67,10 +129,10 @@ CREATE TABLE `kpi_answers` (
 --
 
 CREATE TABLE `kpi_indicators` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `title` varchar(255) NOT NULL COMMENT 'ชื่อตัวชี้วัด',
-  `display_order` int(11) NOT NULL DEFAULT 0 COMMENT 'ลำดับการแสดงผล'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+  `display_order` int NOT NULL DEFAULT '0' COMMENT 'ลำดับการแสดงผล'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Dumping data for table `kpi_indicators`
@@ -93,11 +155,18 @@ INSERT INTO `kpi_indicators` (`id`, `title`, `display_order`) VALUES
 --
 
 CREATE TABLE `kpi_indicator_suggestions` (
-  `id` int(11) NOT NULL,
-  `session_id` int(11) NOT NULL COMMENT 'FK to supervision_sessions.id',
-  `indicator_id` int(11) NOT NULL COMMENT 'FK to kpi_indicators.id',
-  `suggestion_text` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+  `id` int NOT NULL,
+  `session_id` int NOT NULL COMMENT 'FK to supervision_sessions.id',
+  `indicator_id` int NOT NULL COMMENT 'FK to kpi_indicators.id',
+  `suggestion_text` text
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Dumping data for table `kpi_indicator_suggestions`
+--
+
+INSERT INTO `kpi_indicator_suggestions` (`id`, `session_id`, `indicator_id`, `suggestion_text`) VALUES
+(8, 4, 8, 'ฟหก');
 
 -- --------------------------------------------------------
 
@@ -106,11 +175,11 @@ CREATE TABLE `kpi_indicator_suggestions` (
 --
 
 CREATE TABLE `kpi_questions` (
-  `id` int(11) NOT NULL,
-  `indicator_id` int(11) NOT NULL COMMENT 'FK อ้างอิงถึงตาราง kpi_indicators',
+  `id` int NOT NULL,
+  `indicator_id` int NOT NULL COMMENT 'FK อ้างอิงถึงตาราง kpi_indicators',
   `question_text` text NOT NULL COMMENT 'ข้อความคำถาม',
-  `display_order` int(11) NOT NULL DEFAULT 0 COMMENT 'ลำดับการแสดงผลของคำถามในตัวชี้วัดนั้นๆ'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+  `display_order` int NOT NULL DEFAULT '0' COMMENT 'ลำดับการแสดงผลของคำถามในตัวชี้วัดนั้นๆ'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Dumping data for table `kpi_questions`
@@ -149,8 +218,8 @@ INSERT INTO `kpi_questions` (`id`, `indicator_id`, `question_text`, `display_ord
 --
 
 CREATE TABLE `quickwin_options` (
-  `OptionID` int(11) NOT NULL,
-  `OptionText` varchar(500) NOT NULL
+  `OptionID` int NOT NULL,
+  `OptionText` varchar(500) COLLATE utf8mb4_general_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -186,13 +255,70 @@ INSERT INTO `quickwin_options` (`OptionID`, `OptionText`) VALUES
 --
 
 CREATE TABLE `quick_win` (
-  `id` int(11) NOT NULL,
-  `t_id` varchar(13) NOT NULL,
-  `p_id` varchar(13) NOT NULL,
+  `id` int NOT NULL,
+  `t_id` varchar(13) COLLATE utf8mb4_general_ci NOT NULL,
+  `p_id` varchar(13) COLLATE utf8mb4_general_ci NOT NULL,
   `supervision_date` datetime NOT NULL,
-  `options` int(11) NOT NULL,
-  `option_other` text NOT NULL
+  `options` int NOT NULL,
+  `option_other` text COLLATE utf8mb4_general_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `quick_win`
+--
+
+INSERT INTO `quick_win` (`id`, `t_id`, `p_id`, `supervision_date`, `options`, `option_other`) VALUES
+(1, '3900200192635', '1560100030525', '2025-12-01 16:37:56', 1, 'เทสระบบรอบที่ 3');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `quick_win_all_events`
+--
+
+CREATE TABLE `quick_win_all_events` (
+  `quick_win_id` int NOT NULL DEFAULT '0',
+  `supervision_date` datetime NOT NULL,
+  `teacher_id` varchar(13) CHARACTER SET utf8mb3 NOT NULL,
+  `full_name` varchar(301) CHARACTER SET utf8mb3 DEFAULT NULL,
+  `school_id` int DEFAULT NULL,
+  `school_name` varchar(255) CHARACTER SET utf8mb3 NOT NULL DEFAULT '',
+  `school_group_id` int DEFAULT NULL,
+  `position_rank` varchar(100) CHARACTER SET utf8mb3 NOT NULL DEFAULT '',
+  `original_learning_group` varchar(255) CHARACTER SET utf8mb3 DEFAULT NULL,
+  `core_learning_group` varchar(255) CHARACTER SET utf8mb3 DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `quick_win_all_events`
+--
+
+INSERT INTO `quick_win_all_events` (`quick_win_id`, `supervision_date`, `teacher_id`, `full_name`, `school_id`, `school_name`, `school_group_id`, `position_rank`, `original_learning_group`, `core_learning_group`) VALUES
+(1, '2025-12-01 16:37:56', '3900200192635', 'นางเอมอร ยกยอ', 1052500516, 'เตรียมอุดมศึกษาพัฒนาการเขลางค์นคร', 2, 'ชำนาญการ', 'พลศึกษา', 'กลุ่มสาระการเรียนรู้สุขศึกษาและพลศึกษา');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `quick_win_dashboard`
+--
+
+CREATE TABLE `quick_win_dashboard` (
+  `teacher_id` varchar(13) CHARACTER SET utf8mb3 NOT NULL,
+  `full_name` varchar(301) CHARACTER SET utf8mb3 DEFAULT NULL,
+  `school_id` int DEFAULT NULL,
+  `school_name` varchar(255) CHARACTER SET utf8mb3 NOT NULL DEFAULT '',
+  `school_group_id` int DEFAULT NULL,
+  `position_rank` varchar(100) CHARACTER SET utf8mb3 NOT NULL DEFAULT '',
+  `original_learning_group` varchar(255) CHARACTER SET utf8mb3 DEFAULT NULL,
+  `core_learning_group` varchar(255) CHARACTER SET utf8mb3 DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `quick_win_dashboard`
+--
+
+INSERT INTO `quick_win_dashboard` (`teacher_id`, `full_name`, `school_id`, `school_name`, `school_group_id`, `position_rank`, `original_learning_group`, `core_learning_group`) VALUES
+('3900200192635', 'นางเอมอร ยกยอ', 1052500516, 'เตรียมอุดมศึกษาพัฒนาการเขลางค์นคร', 2, 'ชำนาญการ', 'พลศึกษา', 'กลุ่มสาระการเรียนรู้สุขศึกษาและพลศึกษา');
 
 -- --------------------------------------------------------
 
@@ -201,11 +327,47 @@ CREATE TABLE `quick_win` (
 --
 
 CREATE TABLE `satisfaction_answers` (
-  `id` int(11) NOT NULL,
-  `session_id` int(11) NOT NULL COMMENT 'FK to supervision_sessions.id',
-  `question_id` int(11) NOT NULL COMMENT 'FK to satisfaction_questions.id',
-  `rating` int(1) NOT NULL COMMENT 'คะแนนที่ให้ (1-5)'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+  `id` int NOT NULL,
+  `session_id` int NOT NULL COMMENT 'FK to supervision_sessions.id',
+  `question_id` int NOT NULL COMMENT 'FK to satisfaction_questions.id',
+  `rating` int NOT NULL COMMENT 'คะแนนที่ให้ (1-5)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Dumping data for table `satisfaction_answers`
+--
+
+INSERT INTO `satisfaction_answers` (`id`, `session_id`, `question_id`, `rating`) VALUES
+(1, 4, 1, 5),
+(2, 4, 2, 5),
+(3, 4, 3, 5),
+(4, 4, 4, 5),
+(5, 4, 5, 5),
+(6, 4, 6, 5),
+(7, 4, 7, 5),
+(8, 4, 8, 5),
+(9, 4, 9, 5),
+(10, 4, 10, 5),
+(11, 4, 11, 5),
+(12, 4, 12, 5),
+(13, 4, 13, 5),
+(14, 4, 14, 5),
+(15, 4, 15, 5),
+(16, 5, 1, 5),
+(17, 5, 2, 5),
+(18, 5, 3, 5),
+(19, 5, 4, 5),
+(20, 5, 5, 5),
+(21, 5, 6, 5),
+(22, 5, 7, 5),
+(23, 5, 8, 5),
+(24, 5, 9, 5),
+(25, 5, 10, 5),
+(26, 5, 11, 5),
+(27, 5, 12, 5),
+(28, 5, 13, 5),
+(29, 5, 14, 5),
+(30, 5, 15, 5);
 
 -- --------------------------------------------------------
 
@@ -214,10 +376,10 @@ CREATE TABLE `satisfaction_answers` (
 --
 
 CREATE TABLE `satisfaction_questions` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `question_text` text NOT NULL,
-  `display_order` int(11) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+  `display_order` int NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Dumping data for table `satisfaction_questions`
@@ -247,10 +409,10 @@ INSERT INTO `satisfaction_questions` (`id`, `question_text`, `display_order`) VA
 --
 
 CREATE TABLE `school` (
-  `school_id` int(11) DEFAULT NULL,
+  `school_id` int DEFAULT NULL,
   `SchoolName` varchar(255) DEFAULT NULL,
-  `SchoolGroup` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+  `SchoolGroup` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Dumping data for table `school`
@@ -310,9 +472,9 @@ INSERT INTO `school` (`school_id`, `SchoolName`, `SchoolGroup`) VALUES
 --
 
 CREATE TABLE `school_group` (
-  `group_id` int(11) DEFAULT NULL,
+  `group_id` int DEFAULT NULL,
   `GroupName` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Dumping data for table `school_group`
@@ -334,19 +496,27 @@ INSERT INTO `school_group` (`group_id`, `GroupName`) VALUES
 --
 
 CREATE TABLE `supervision_sessions` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `supervisor_p_id` varchar(13) NOT NULL COMMENT 'FK to supervisor.p_id',
   `teacher_t_pid` varchar(13) NOT NULL COMMENT 'FK to teacher.t_pid',
   `subject_code` varchar(50) DEFAULT NULL COMMENT 'รหัสวิชา',
   `subject_name` varchar(255) DEFAULT NULL COMMENT 'ชื่อวิชา',
-  `inspection_time` int(2) DEFAULT NULL COMMENT 'ครั้งที่นิเทศ',
+  `inspection_time` int DEFAULT NULL COMMENT 'ครั้งที่นิเทศ',
   `inspection_date` date DEFAULT NULL COMMENT 'วันที่รับการนิเทศ',
-  `overall_suggestion` text DEFAULT NULL COMMENT 'ข้อเสนอแนะเพิ่มเติม',
-  `supervision_date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `satisfaction_suggestion` text DEFAULT NULL COMMENT 'ข้อเสนอแนะจากแบบประเมินความพึงพอใจ',
-  `satisfaction_submitted` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'สถานะการประเมิน: 0=ยังไม่ประเมิน, 1=ประเมินแล้ว',
+  `overall_suggestion` text COMMENT 'ข้อเสนอแนะเพิ่มเติม',
+  `supervision_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `satisfaction_suggestion` text COMMENT 'ข้อเสนอแนะจากแบบประเมินความพึงพอใจ',
+  `satisfaction_submitted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'สถานะการประเมิน: 0=ยังไม่ประเมิน, 1=ประเมินแล้ว',
   `satisfaction_date` datetime DEFAULT NULL COMMENT 'วันที่ประเมินความพึงพอใจ'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Dumping data for table `supervision_sessions`
+--
+
+INSERT INTO `supervision_sessions` (`id`, `supervisor_p_id`, `teacher_t_pid`, `subject_code`, `subject_name`, `inspection_time`, `inspection_date`, `overall_suggestion`, `supervision_date`, `satisfaction_suggestion`, `satisfaction_submitted`, `satisfaction_date`) VALUES
+(4, '3509900553730', '3510400265249', 'น007', 'แนะแนว', 1, '2025-12-01', 'ทอสรอบที่ 11111', '2025-12-01 09:23:23', 'ฟหกฟกฟหก', 1, '2025-12-01 16:23:55'),
+(5, '1560100030525', '1520800063949', 'ไทย', 'ไทย', 1, '2025-12-01', 'เทสระบบรอบที่ 2', '2025-12-01 09:24:05', 'เทสระบบรอบที่ 2', 1, '2025-12-01 16:24:49');
 
 -- --------------------------------------------------------
 
@@ -358,14 +528,14 @@ CREATE TABLE `supervisor` (
   `p_id` varchar(13) DEFAULT NULL,
   `office_id` varchar(3) DEFAULT NULL,
   `OfficeName` varchar(255) DEFAULT NULL,
-  `prefix_id` int(11) DEFAULT NULL,
+  `prefix_id` int DEFAULT NULL,
   `PrefixName` varchar(50) DEFAULT NULL,
   `fname` varchar(100) DEFAULT NULL,
   `lname` varchar(100) DEFAULT NULL,
   `position` varchar(100) DEFAULT NULL,
   `rank_id` varchar(2) DEFAULT NULL,
   `RankName` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Dumping data for table `supervisor`
@@ -392,17 +562,17 @@ INSERT INTO `supervisor` (`p_id`, `office_id`, `OfficeName`, `prefix_id`, `Prefi
 
 CREATE TABLE `teacher` (
   `t_pid` varchar(13) NOT NULL,
-  `school_id` int(11) DEFAULT NULL,
+  `school_id` int DEFAULT NULL,
   `prefix_id` varchar(3) DEFAULT NULL,
   `PrefixName` varchar(100) DEFAULT NULL,
   `fname` varchar(100) DEFAULT NULL,
   `lname` varchar(100) DEFAULT NULL,
-  `adm_rank_id` int(11) DEFAULT NULL,
+  `adm_rank_id` int DEFAULT NULL,
   `adm_name` varchar(100) DEFAULT NULL,
-  `learning_group_id` int(3) DEFAULT NULL,
+  `learning_group_id` int DEFAULT NULL,
   `learning_group` varchar(255) DEFAULT NULL,
   `major_subject` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Dumping data for table `teacher`
@@ -2030,7 +2200,7 @@ CREATE TABLE `teacher_core_assignments` (
   `t_pid` varchar(255) NOT NULL,
   `core_learning_group` varchar(255) DEFAULT NULL,
   `sci_tech_type` varchar(50) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Dumping data for table `teacher_core_assignments`
@@ -3647,113 +3817,6 @@ INSERT INTO `teacher_core_assignments` (`t_pid`, `core_learning_group`, `sci_tec
 ('5560190005129', 'กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม', NULL),
 ('5671100002818', 'กลุ่มสาระการเรียนรู้คณิตศาสตร์', NULL);
 
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `view_quick_win_dashboard`
--- (See below for the actual view)
---
-CREATE TABLE `view_quick_win_dashboard` (
-`teacher_id` varchar(13)
-,`full_name` varchar(301)
-,`school_id` int(11)
-,`school_name` varchar(255)
-,`school_group_id` int(11)
-,`position_rank` varchar(100)
-,`original_learning_group` varchar(255)
-,`core_learning_group` varchar(48)
-);
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `view_quick_win_dashboard_all_events`
--- (See below for the actual view)
---
-CREATE TABLE `view_quick_win_dashboard_all_events` (
-`quick_win_id` int(11)
-,`supervision_date` datetime
-,`teacher_id` varchar(13)
-,`full_name` varchar(301)
-,`school_id` int(11)
-,`school_name` varchar(255)
-,`school_group_id` int(11)
-,`position_rank` varchar(100)
-,`original_learning_group` varchar(255)
-,`core_learning_group` varchar(48)
-);
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `view_teacher_core_groups`
--- (See below for the actual view)
---
-CREATE TABLE `view_teacher_core_groups` (
-`t_pid` varchar(13)
-,`prefix_id` varchar(3)
-,`PrefixName` varchar(100)
-,`fname` varchar(100)
-,`lname` varchar(100)
-,`learning_group_id` int(3)
-,`original_group_name` varchar(255)
-,`core_learning_group` varchar(48)
-,`sci_tech_type` varchar(11)
-);
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `view_teacher_dashboard_info`
--- (See below for the actual view)
---
-CREATE TABLE `view_teacher_dashboard_info` (
-`teacher_id` varchar(13)
-,`full_name` varchar(301)
-,`school_id` int(11)
-,`school_name` varchar(255)
-,`school_group_id` int(11)
-,`position_rank` varchar(100)
-,`original_learning_group` varchar(255)
-,`core_learning_group` varchar(28)
-);
-
--- --------------------------------------------------------
-
---
--- Structure for view `view_quick_win_dashboard`
---
-DROP TABLE IF EXISTS `view_quick_win_dashboard`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_quick_win_dashboard`  AS SELECT DISTINCT `t`.`t_pid` AS `teacher_id`, concat(ifnull(`t`.`PrefixName`,''),`t`.`fname`,' ',`t`.`lname`) AS `full_name`, `t`.`school_id` AS `school_id`, ifnull(`s`.`SchoolName`,'ไม่ระบุโรงเรียน') AS `school_name`, `s`.`SchoolGroup` AS `school_group_id`, ifnull(`t`.`adm_name`,'ไม่ระบุ') AS `position_rank`, `t`.`learning_group` AS `original_learning_group`, CASE WHEN `t`.`learning_group` like '%ภาษาไทย%' THEN 'กลุ่มสาระการเรียนรู้ภาษาไทย' WHEN `t`.`learning_group` like '%คณิตศาสตร์%' THEN 'กลุ่มสาระการเรียนรู้คณิตศาสตร์' WHEN `t`.`learning_group` regexp 'วิทยาศาสตร์|เคมี|ฟิสิกส์|ชีววิทยา|คอมพิวเตอร์|เทคโนโลยี|โลก ดาราศาสตร์' THEN 'กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี' WHEN `t`.`learning_group` like '%สังคม%' OR `t`.`learning_group` like '%ประวัติศาสตร์%' OR `t`.`learning_group` like '%ภูมิศาสตร์%' THEN 'กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม' WHEN `t`.`learning_group` regexp 'สุขศึกษา|พลศึกษา|พละ' THEN 'กลุ่มสาระการเรียนรู้สุขศึกษาและพลศึกษา' WHEN `t`.`learning_group` regexp 'ศิลป|ดนตรี|นาฎศิลป์|ทัศนศิลป์' THEN 'กลุ่มสาระการเรียนรู้ศิลปะ' WHEN `t`.`learning_group` regexp 'การงาน|เกษตร|คหกรรม|อุตสาหกรรม|พณิชยกรรม|บริหารธุรกิจ' THEN 'กลุ่มสาระการเรียนรู้การงานอาชีพ' WHEN `t`.`learning_group` regexp 'อังกฤษ|จีน|ญี่ปุ่น|ฝรั่งเศส|เกาหลี|ต่างประเทศ' THEN 'กลุ่มสาระการเรียนรู้ภาษาต่างประเทศ' WHEN `t`.`learning_group` like '%แนะแนว%' THEN 'กิจกรรมพัฒนาผู้เรียน' ELSE 'อื่นๆ' END AS `core_learning_group` FROM ((`teacher` `t` join `quick_win` `qw` on(`t`.`t_pid` = `qw`.`t_id`)) left join `school` `s` on(`t`.`school_id` = `s`.`school_id`)) ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `view_quick_win_dashboard_all_events`
---
-DROP TABLE IF EXISTS `view_quick_win_dashboard_all_events`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_quick_win_dashboard_all_events`  AS SELECT `qw`.`id` AS `quick_win_id`, `qw`.`supervision_date` AS `supervision_date`, `t`.`t_pid` AS `teacher_id`, concat(ifnull(`t`.`PrefixName`,''),`t`.`fname`,' ',`t`.`lname`) AS `full_name`, `t`.`school_id` AS `school_id`, ifnull(`s`.`SchoolName`,'ไม่ระบุโรงเรียน') AS `school_name`, `s`.`SchoolGroup` AS `school_group_id`, ifnull(`t`.`adm_name`,'ไม่ระบุ') AS `position_rank`, `t`.`learning_group` AS `original_learning_group`, CASE WHEN `t`.`learning_group` like '%ภาษาไทย%' THEN 'กลุ่มสาระการเรียนรู้ภาษาไทย' WHEN `t`.`learning_group` like '%คณิตศาสตร์%' THEN 'กลุ่มสาระการเรียนรู้คณิตศาสตร์' WHEN `t`.`learning_group` regexp 'วิทยาศาสตร์|เคมี|ฟิสิกส์|ชีววิทยา|คอมพิวเตอร์|เทคโนโลยี|โลก ดาราศาสตร์' THEN 'กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี' WHEN `t`.`learning_group` like '%สังคม%' OR `t`.`learning_group` like '%ประวัติศาสตร์%' OR `t`.`learning_group` like '%ภูมิศาสตร์%' THEN 'กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม' WHEN `t`.`learning_group` regexp 'สุขศึกษา|พลศึกษา|พละ' THEN 'กลุ่มสาระการเรียนรู้สุขศึกษาและพลศึกษา' WHEN `t`.`learning_group` regexp 'ศิลป|ดนตรี|นาฎศิลป์|ทัศนศิลป์' THEN 'กลุ่มสาระการเรียนรู้ศิลปะ' WHEN `t`.`learning_group` regexp 'การงาน|เกษตร|คหกรรม|อุตสาหกรรม|พณิชยกรรม|บริหารธุรกิจ' THEN 'กลุ่มสาระการเรียนรู้การงานอาชีพ' WHEN `t`.`learning_group` regexp 'อังกฤษ|จีน|ญี่ปุ่น|ฝรั่งเศส|เกาหลี|ต่างประเทศ' THEN 'กลุ่มสาระการเรียนรู้ภาษาต่างประเทศ' WHEN `t`.`learning_group` like '%แนะแนว%' THEN 'กิจกรรมพัฒนาผู้เรียน' ELSE 'อื่นๆ' END AS `core_learning_group` FROM ((`quick_win` `qw` join `teacher` `t` on(`qw`.`t_id` = `t`.`t_pid`)) left join `school` `s` on(`t`.`school_id` = `s`.`school_id`)) ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `view_teacher_core_groups`
---
-DROP TABLE IF EXISTS `view_teacher_core_groups`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_teacher_core_groups`  AS SELECT `t`.`t_pid` AS `t_pid`, `t`.`prefix_id` AS `prefix_id`, `t`.`PrefixName` AS `PrefixName`, `t`.`fname` AS `fname`, `t`.`lname` AS `lname`, `t`.`learning_group_id` AS `learning_group_id`, `t`.`learning_group` AS `original_group_name`, CASE WHEN `t`.`learning_group` like '%ภาษาไทย%' THEN 'กลุ่มสาระการเรียนรู้ภาษาไทย' WHEN `t`.`learning_group` like '%คณิตศาสตร์%' THEN 'กลุ่มสาระการเรียนรู้คณิตศาสตร์' WHEN `t`.`learning_group` regexp 'วิทยาศาสตร์|เคมี|ฟิสิกส์|ชีววิทยา|คอมพิวเตอร์|เทคโนโลยี|โลก ดาราศาสตร์' THEN 'กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี' WHEN `t`.`learning_group` like '%สังคม%' OR `t`.`learning_group` like '%ประวัติศาสตร์%' OR `t`.`learning_group` like '%ภูมิศาสตร์%' THEN 'กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม' WHEN `t`.`learning_group` regexp 'สุขศึกษา|พลศึกษา|พละ' THEN 'กลุ่มสาระการเรียนรู้สุขศึกษาและพลศึกษา' WHEN `t`.`learning_group` regexp 'ศิลป|ดนตรี|นาฎศิลป์|ทัศนศิลป์' THEN 'กลุ่มสาระการเรียนรู้ศิลปะ' WHEN `t`.`learning_group` regexp 'การงาน|เกษตร|คหกรรม|อุตสาหกรรม|พณิชยกรรม|บริหารธุรกิจ' THEN 'กลุ่มสาระการเรียนรู้การงานอาชีพ' WHEN `t`.`learning_group` regexp 'อังกฤษ|จีน|ญี่ปุ่น|ฝรั่งเศส|เกาหลี|ต่างประเทศ' THEN 'กลุ่มสาระการเรียนรู้ภาษาต่างประเทศ' WHEN `t`.`learning_group` like '%แนะแนว%' THEN 'กิจกรรมพัฒนาผู้เรียน' ELSE 'อื่นๆ' END AS `core_learning_group`, CASE WHEN `t`.`learning_group_id` in (1313,1314,1315,1316,1394) THEN 'วิทยาศาสตร์' WHEN `t`.`learning_group_id` = 9905 THEN 'เทคโนโลยี' ELSE NULL END AS `sci_tech_type` FROM `teacher` AS `t` ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `view_teacher_dashboard_info`
---
-DROP TABLE IF EXISTS `view_teacher_dashboard_info`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_teacher_dashboard_info`  AS SELECT `t`.`t_pid` AS `teacher_id`, concat(ifnull(`t`.`PrefixName`,''),`t`.`fname`,' ',`t`.`lname`) AS `full_name`, `t`.`school_id` AS `school_id`, ifnull(`s`.`SchoolName`,'ไม่ระบุโรงเรียน') AS `school_name`, `s`.`SchoolGroup` AS `school_group_id`, ifnull(`t`.`adm_name`,'ไม่ระบุ') AS `position_rank`, `t`.`learning_group` AS `original_learning_group`, CASE WHEN `t`.`learning_group` like '%ภาษาไทย%' THEN 'ภาษาไทย' WHEN `t`.`learning_group` like '%คณิตศาสตร์%' THEN 'คณิตศาสตร์' WHEN `t`.`learning_group` regexp 'วิทยาศาสตร์|เคมี|ฟิสิกส์|ชีววิทยา|คอมพิวเตอร์|เทคโนโลยี|โลก ดาราศาสตร์' THEN 'วิทยาศาสตร์และเทคโนโลยี' WHEN `t`.`learning_group` like '%สังคม%' OR `t`.`learning_group` like '%ประวัติศาสตร์%' OR `t`.`learning_group` like '%ภูมิศาสตร์%' THEN 'สังคมศึกษา ศาสนา และวัฒนธรรม' WHEN `t`.`learning_group` regexp 'สุขศึกษา|พลศึกษา|พละ' THEN 'สุขศึกษาและพลศึกษา' WHEN `t`.`learning_group` regexp 'ศิลป|ดนตรี|นาฎศิลป์|ทัศนศิลป์' THEN 'ศิลปะ' WHEN `t`.`learning_group` regexp 'การงาน|เกษตร|คหกรรม|อุตสาหกรรม|พณิชยกรรม|บริหารธุรกิจ' THEN 'การงานอาชีพ' WHEN `t`.`learning_group` regexp 'อังกฤษ|จีน|ญี่ปุ่น|ฝรั่งเศส|เกาหลี|ต่างประเทศ' THEN 'ภาษาต่างประเทศ' WHEN `t`.`learning_group` like '%แนะแนว%' THEN 'กิจกรรมพัฒนาผู้เรียน' ELSE 'อื่นๆ' END AS `core_learning_group` FROM (`teacher` `t` left join `school` `s` on(`t`.`school_id` = `s`.`school_id`)) ;
-
 --
 -- Indexes for dumped tables
 --
@@ -3776,21 +3839,19 @@ ALTER TABLE `images`
 -- Indexes for table `kpi_answers`
 --
 ALTER TABLE `kpi_answers`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `session_id` (`session_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `kpi_indicator_suggestions`
 --
 ALTER TABLE `kpi_indicator_suggestions`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `session_id` (`session_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `quickwin_options`
+-- Indexes for table `kpi_questions`
 --
-ALTER TABLE `quickwin_options`
-  ADD PRIMARY KEY (`OptionID`);
+ALTER TABLE `kpi_questions`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `quick_win`
@@ -3802,26 +3863,13 @@ ALTER TABLE `quick_win`
 -- Indexes for table `satisfaction_answers`
 --
 ALTER TABLE `satisfaction_answers`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `session_id` (`session_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `supervision_sessions`
 --
 ALTER TABLE `supervision_sessions`
   ADD PRIMARY KEY (`id`);
-
---
--- Indexes for table `teacher`
---
-ALTER TABLE `teacher`
-  ADD PRIMARY KEY (`t_pid`);
-
---
--- Indexes for table `teacher_core_assignments`
---
-ALTER TABLE `teacher_core_assignments`
-  ADD PRIMARY KEY (`t_pid`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -3831,83 +3879,43 @@ ALTER TABLE `teacher_core_assignments`
 -- AUTO_INCREMENT for table `certificate_log`
 --
 ALTER TABLE `certificate_log`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `images`
 --
 ALTER TABLE `images`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `kpi_answers`
 --
 ALTER TABLE `kpi_answers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=928;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=121;
 
 --
 -- AUTO_INCREMENT for table `kpi_indicator_suggestions`
 --
 ALTER TABLE `kpi_indicator_suggestions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=310;
-
---
--- AUTO_INCREMENT for table `quickwin_options`
---
-ALTER TABLE `quickwin_options`
-  MODIFY `OptionID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `quick_win`
 --
 ALTER TABLE `quick_win`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `satisfaction_answers`
 --
 ALTER TABLE `satisfaction_answers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=76;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `supervision_sessions`
 --
 ALTER TABLE `supervision_sessions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `certificate_log`
---
-ALTER TABLE `certificate_log`
-  ADD CONSTRAINT `fk_session` FOREIGN KEY (`session_id`) REFERENCES `supervision_sessions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `kpi_answers`
---
-ALTER TABLE `kpi_answers`
-  ADD CONSTRAINT `kpi_answers_ibfk_1` FOREIGN KEY (`session_id`) REFERENCES `supervision_sessions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `kpi_indicator_suggestions`
---
-ALTER TABLE `kpi_indicator_suggestions`
-  ADD CONSTRAINT `kpi_indicator_suggestions_ibfk_1` FOREIGN KEY (`session_id`) REFERENCES `supervision_sessions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `satisfaction_answers`
---
-ALTER TABLE `satisfaction_answers`
-  ADD CONSTRAINT `satisfaction_answers_ibfk_1` FOREIGN KEY (`session_id`) REFERENCES `supervision_sessions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `teacher_core_assignments`
---
-ALTER TABLE `teacher_core_assignments`
-  ADD CONSTRAINT `fk_teacher_assignment` FOREIGN KEY (`t_pid`) REFERENCES `teacher` (`t_pid`) ON DELETE CASCADE ON UPDATE CASCADE;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
