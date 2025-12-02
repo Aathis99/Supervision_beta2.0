@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Dec 01, 2025 at 09:27 PM
+-- Generation Time: Dec 02, 2025 at 02:55 PM
 -- Server version: 8.0.44-0ubuntu0.22.04.1
 -- PHP Version: 7.4.33
 
@@ -39,7 +39,9 @@ CREATE TABLE `certificate_log` (
 
 INSERT INTO `certificate_log` (`id`, `session_id`, `generated_at`) VALUES
 (1, 4, '2025-12-01 09:23:56'),
-(2, 5, '2025-12-01 09:24:51');
+(2, 5, '2025-12-01 09:24:51'),
+(3, 7, '2025-12-02 02:00:15'),
+(4, 16, '2025-12-02 04:12:49');
 
 -- --------------------------------------------------------
 
@@ -61,66 +63,14 @@ CREATE TABLE `images` (
 --
 
 CREATE TABLE `kpi_answers` (
-  `id` int NOT NULL,
-  `session_id` int NOT NULL COMMENT 'FK to supervision_sessions.id',
   `question_id` int NOT NULL COMMENT 'FK to kpi_questions.id',
   `rating_score` int DEFAULT NULL,
-  `comment` text
+  `comment` text,
+  `supervisor_p_id` varchar(13) NOT NULL,
+  `teacher_t_pid` varchar(13) NOT NULL,
+  `subject_code` varchar(10) NOT NULL,
+  `inspection_time` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
-
---
--- Dumping data for table `kpi_answers`
---
-
-INSERT INTO `kpi_answers` (`id`, `session_id`, `question_id`, `rating_score`, `comment`) VALUES
-(73, 4, 1, 3, 'aaaa'),
-(74, 4, 2, 2, 'aa'),
-(75, 4, 3, 3, ''),
-(76, 4, 4, 2, ''),
-(77, 4, 5, 2, ''),
-(78, 4, 6, 3, ''),
-(79, 4, 7, 2, ''),
-(80, 4, 8, 1, ''),
-(81, 4, 9, 1, ''),
-(82, 4, 10, 0, ''),
-(83, 4, 11, 1, ''),
-(84, 4, 12, 1, ''),
-(85, 4, 13, 0, ''),
-(86, 4, 14, 2, ''),
-(87, 4, 15, 0, ''),
-(88, 4, 16, 0, ''),
-(89, 4, 17, 0, ''),
-(90, 4, 18, 3, ''),
-(91, 4, 19, 1, ''),
-(92, 4, 20, 0, ''),
-(93, 4, 21, 3, ''),
-(94, 4, 22, 2, ''),
-(95, 4, 23, 2, ''),
-(96, 4, 24, 1, 'ฟหก'),
-(97, 5, 1, 3, ''),
-(98, 5, 2, 3, ''),
-(99, 5, 3, 2, ''),
-(100, 5, 4, 0, ''),
-(101, 5, 5, 3, ''),
-(102, 5, 6, 2, ''),
-(103, 5, 7, 2, ''),
-(104, 5, 8, 0, ''),
-(105, 5, 9, 3, ''),
-(106, 5, 10, 2, ''),
-(107, 5, 11, 1, ''),
-(108, 5, 12, 0, ''),
-(109, 5, 13, 3, ''),
-(110, 5, 14, 0, ''),
-(111, 5, 15, 2, ''),
-(112, 5, 16, 0, ''),
-(113, 5, 17, 2, ''),
-(114, 5, 18, 3, ''),
-(115, 5, 19, 3, ''),
-(116, 5, 20, 3, ''),
-(117, 5, 21, 0, ''),
-(118, 5, 22, 3, ''),
-(119, 5, 23, 2, ''),
-(120, 5, 24, 0, '');
 
 -- --------------------------------------------------------
 
@@ -155,18 +105,13 @@ INSERT INTO `kpi_indicators` (`id`, `title`, `display_order`) VALUES
 --
 
 CREATE TABLE `kpi_indicator_suggestions` (
-  `id` int NOT NULL,
-  `session_id` int NOT NULL COMMENT 'FK to supervision_sessions.id',
   `indicator_id` int NOT NULL COMMENT 'FK to kpi_indicators.id',
-  `suggestion_text` text
+  `suggestion_text` text,
+  `supervisor_p_id` varchar(13) NOT NULL,
+  `teacher_t_pid` varchar(13) NOT NULL,
+  `subject_code` varchar(10) NOT NULL,
+  `inspection_time` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
-
---
--- Dumping data for table `kpi_indicator_suggestions`
---
-
-INSERT INTO `kpi_indicator_suggestions` (`id`, `session_id`, `indicator_id`, `suggestion_text`) VALUES
-(8, 4, 8, 'ฟหก');
 
 -- --------------------------------------------------------
 
@@ -268,7 +213,9 @@ CREATE TABLE `quick_win` (
 --
 
 INSERT INTO `quick_win` (`id`, `t_id`, `p_id`, `supervision_date`, `options`, `option_other`) VALUES
-(1, '3900200192635', '1560100030525', '2025-12-01 16:37:56', 1, 'เทสระบบรอบที่ 3');
+(1, '3900200192635', '1560100030525', '2025-12-01 16:37:56', 1, 'เทสระบบรอบที่ 3'),
+(2, '3510400265249', '3509900553730', '2025-12-01 22:46:30', 6, 'ฟ'),
+(3, '3510400265249', '1529900191467', '2025-12-01 23:12:17', 14, '888');
 
 -- --------------------------------------------------------
 
@@ -327,47 +274,13 @@ INSERT INTO `quick_win_dashboard` (`teacher_id`, `full_name`, `school_id`, `scho
 --
 
 CREATE TABLE `satisfaction_answers` (
-  `id` int NOT NULL,
-  `session_id` int NOT NULL COMMENT 'FK to supervision_sessions.id',
   `question_id` int NOT NULL COMMENT 'FK to satisfaction_questions.id',
-  `rating` int NOT NULL COMMENT 'คะแนนที่ให้ (1-5)'
+  `rating` int NOT NULL COMMENT 'คะแนนที่ให้ (1-5)',
+  `supervisor_p_id` varchar(13) NOT NULL,
+  `teacher_t_pid` varchar(13) NOT NULL,
+  `subject_code` varchar(10) NOT NULL,
+  `inspection_time` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
-
---
--- Dumping data for table `satisfaction_answers`
---
-
-INSERT INTO `satisfaction_answers` (`id`, `session_id`, `question_id`, `rating`) VALUES
-(1, 4, 1, 5),
-(2, 4, 2, 5),
-(3, 4, 3, 5),
-(4, 4, 4, 5),
-(5, 4, 5, 5),
-(6, 4, 6, 5),
-(7, 4, 7, 5),
-(8, 4, 8, 5),
-(9, 4, 9, 5),
-(10, 4, 10, 5),
-(11, 4, 11, 5),
-(12, 4, 12, 5),
-(13, 4, 13, 5),
-(14, 4, 14, 5),
-(15, 4, 15, 5),
-(16, 5, 1, 5),
-(17, 5, 2, 5),
-(18, 5, 3, 5),
-(19, 5, 4, 5),
-(20, 5, 5, 5),
-(21, 5, 6, 5),
-(22, 5, 7, 5),
-(23, 5, 8, 5),
-(24, 5, 9, 5),
-(25, 5, 10, 5),
-(26, 5, 11, 5),
-(27, 5, 12, 5),
-(28, 5, 13, 5),
-(29, 5, 14, 5),
-(30, 5, 15, 5);
 
 -- --------------------------------------------------------
 
@@ -496,12 +409,11 @@ INSERT INTO `school_group` (`group_id`, `GroupName`) VALUES
 --
 
 CREATE TABLE `supervision_sessions` (
-  `id` int NOT NULL,
   `supervisor_p_id` varchar(13) NOT NULL COMMENT 'FK to supervisor.p_id',
   `teacher_t_pid` varchar(13) NOT NULL COMMENT 'FK to teacher.t_pid',
-  `subject_code` varchar(50) DEFAULT NULL COMMENT 'รหัสวิชา',
+  `subject_code` varchar(50) NOT NULL COMMENT 'รหัสวิชา',
   `subject_name` varchar(255) DEFAULT NULL COMMENT 'ชื่อวิชา',
-  `inspection_time` int DEFAULT NULL COMMENT 'ครั้งที่นิเทศ',
+  `inspection_time` int NOT NULL COMMENT 'ครั้งที่นิเทศ',
   `inspection_date` date DEFAULT NULL COMMENT 'วันที่รับการนิเทศ',
   `overall_suggestion` text COMMENT 'ข้อเสนอแนะเพิ่มเติม',
   `supervision_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -514,9 +426,20 @@ CREATE TABLE `supervision_sessions` (
 -- Dumping data for table `supervision_sessions`
 --
 
-INSERT INTO `supervision_sessions` (`id`, `supervisor_p_id`, `teacher_t_pid`, `subject_code`, `subject_name`, `inspection_time`, `inspection_date`, `overall_suggestion`, `supervision_date`, `satisfaction_suggestion`, `satisfaction_submitted`, `satisfaction_date`) VALUES
-(4, '3509900553730', '3510400265249', 'น007', 'แนะแนว', 1, '2025-12-01', 'ทอสรอบที่ 11111', '2025-12-01 09:23:23', 'ฟหกฟกฟหก', 1, '2025-12-01 16:23:55'),
-(5, '1560100030525', '1520800063949', 'ไทย', 'ไทย', 1, '2025-12-01', 'เทสระบบรอบที่ 2', '2025-12-01 09:24:05', 'เทสระบบรอบที่ 2', 1, '2025-12-01 16:24:49');
+INSERT INTO `supervision_sessions` (`supervisor_p_id`, `teacher_t_pid`, `subject_code`, `subject_name`, `inspection_time`, `inspection_date`, `overall_suggestion`, `supervision_date`, `satisfaction_suggestion`, `satisfaction_submitted`, `satisfaction_date`) VALUES
+('1520590004267', '3510300327129', 'ค0001', 'คอมพิวเตอร์', 1, '2025-12-02', '', '2025-12-02 02:18:15', NULL, 0, NULL),
+('1529900191467', '1509901018807', 'ค0001', 'คอมพิวเตอร์', 1, '2025-12-02', '', '2025-12-02 02:10:36', NULL, 0, NULL),
+('1529900191467', '3560100742017', 'ท001', 'ภาษาไทย', 1, '2025-12-01', 'ข้อเสนอแนะครั้งใหม่555', '2025-12-01 16:06:47', NULL, 0, NULL),
+('1529900192498', '3659900688618', 'พ001', 'แนะแนว', 3, '2025-12-02', '', '2025-12-02 02:30:11', '', 1, '2025-12-02 11:12:47'),
+('1560100030525', '1520800063949', 'ไทย', 'ไทย', 1, '2025-12-01', 'เทสระบบรอบที่ 2', '2025-12-01 09:24:05', 'เทสระบบรอบที่ 2', 1, '2025-12-01 16:24:49'),
+('3210400040835', '1509901504370', 'ท0001', 'ภาษาไทย', 1, '2025-12-01', '', '2025-12-01 16:59:41', NULL, 0, NULL),
+('3501200441290', '3510600085686', 'ท001', 'แนะแนว', 1, '2025-12-02', 'กฟหก', '2025-12-02 02:26:11', NULL, 0, NULL),
+('3509900553730', '3510400265249', 'ท0001', 'ภาษาไทย', 2, '2025-12-01', '', '2025-12-01 16:54:57', '', 1, '2025-12-02 09:00:13'),
+('3509900553730', '3510400265249', 'ท001', 'ภาษาไทย', 3, '2025-12-02', '', '2025-12-01 17:19:14', NULL, 0, NULL),
+('3509900553730', '3510400265249', 'น007', 'แนะแนว', 1, '2025-12-01', 'ทอสรอบที่ 11111', '2025-12-01 09:23:23', 'ฟหกฟกฟหก', 1, '2025-12-01 16:23:55'),
+('3509900553730', '3659900688618', 'ท0001', 'ภาษาไทย', 1, '2025-12-02', '', '2025-12-01 17:16:10', NULL, 0, NULL),
+('3509900553730', '3659900688618', 'น007', 'แนะแนว', 2, '2025-12-02', '', '2025-12-02 02:06:48', NULL, 0, NULL),
+('3520900142120', '1521200047986', 'ท0001', 'ภาษาไทย', 1, '2025-12-02', '', '2025-12-02 02:14:02', NULL, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -525,7 +448,7 @@ INSERT INTO `supervision_sessions` (`id`, `supervisor_p_id`, `teacher_t_pid`, `s
 --
 
 CREATE TABLE `supervisor` (
-  `p_id` varchar(13) DEFAULT NULL,
+  `p_id` varchar(13) NOT NULL,
   `office_id` varchar(3) DEFAULT NULL,
   `OfficeName` varchar(255) DEFAULT NULL,
   `prefix_id` int DEFAULT NULL,
@@ -542,17 +465,17 @@ CREATE TABLE `supervisor` (
 --
 
 INSERT INTO `supervisor` (`p_id`, `office_id`, `OfficeName`, `prefix_id`, `PrefixName`, `fname`, `lname`, `position`, `rank_id`, `RankName`) VALUES
-('3509900553730', '100', 'สพม.ลำปาง ลำพูน', 5, 'นาง', 'ชนัดดา', 'ทิพย์เลิศ', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
-('3210400040835', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ถิรมน', 'จิตปรีชาสกุล', 'ศึกษานิเทศก์', '13', 'คศ. 3'),
 ('1520590004267', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'พลอยไพลิน', 'นิลกรรณ์', 'ศึกษานิเทศก์', '13', 'คศ. 3'),
-('3501200441290', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'พิชญา', 'คำปัน', 'ศึกษานิเทศก์ (ผอ.กลุ่ม)', '13', 'คศ. 3'),
-('3520100379974', '100', 'สพม.ลำปาง ลำพูน', 3, 'นาย', 'พีรวุทธิ์', 'สีดาบุตร', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
-('5520700016810', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'สุดาภรณ์', 'สืบสุติน', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
-('1529900270499', '100', 'สพม.ลำปาง ลำพูน', 3, 'นาย', 'ฎิชมากรณ์', 'ยศวงค์เรือน', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
 ('1529900191467', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ปัทมา', 'ฮูเซน', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
+('1529900192498', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ศิริมาศ', 'ราชคม', 'ศึกษานิเทศก์', '13', 'คศ. 3'),
+('1529900270499', '100', 'สพม.ลำปาง ลำพูน', 3, 'นาย', 'ฎิชมากรณ์', 'ยศวงค์เรือน', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
 ('1560100030525', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ภัทรมาศ', 'ปินใจ', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
+('3210400040835', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ถิรมน', 'จิตปรีชาสกุล', 'ศึกษานิเทศก์', '13', 'คศ. 3'),
+('3501200441290', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'พิชญา', 'คำปัน', 'ศึกษานิเทศก์ (ผอ.กลุ่ม)', '13', 'คศ. 3'),
+('3509900553730', '100', 'สพม.ลำปาง ลำพูน', 5, 'นาง', 'ชนัดดา', 'ทิพย์เลิศ', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
+('3520100379974', '100', 'สพม.ลำปาง ลำพูน', 3, 'นาย', 'พีรวุทธิ์', 'สีดาบุตร', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
 ('3520900142120', '100', 'สพม.ลำปาง ลำพูน', 5, 'นาง', 'ศรีจันทรัตน์ ', 'กันทะวัง', 'ศึกษานิเทศก์', '13', 'คศ. 3'),
-('1529900192498', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ศิริมาศ', 'ราชคม', 'ศึกษานิเทศก์', '13', 'คศ. 3');
+('5520700016810', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'สุดาภรณ์', 'สืบสุติน', 'ศึกษานิเทศก์', '12', 'คศ. 2');
 
 -- --------------------------------------------------------
 
@@ -878,7 +801,7 @@ INSERT INTO `teacher` (`t_pid`, `school_id`, `prefix_id`, `PrefixName`, `fname`,
 ('1520100083670', 1052500514, '3', 'นาย', 'ชลธิช', 'ณ ลำปาง', 15, 'ชำนาญการ', 9905, 'คอมพิวเตอร์', 'คอมพิวเตอร์'),
 ('1520100086351', 1052500513, '3', 'นาย', 'ศรัณย์กร', 'เพชรเก่า', 99, 'ไม่มีวิทยฐานะ', 1351, 'จิตวิทยาแนะแนว', 'แนะแนว'),
 ('1520100086849', 1052500530, '4', 'นางสาว', 'กัญญ์พิดา', 'กันธิมา', 15, 'ชำนาญการ', 1314, 'เคมี', 'เคมี'),
-('1520100095015', 1051510304, '4', 'นางสาว', 'จิตพิสุทธิ์', 'อินต๊ะสืบ', 15, 'ชำนาญการ', 1311, 'ภาษาไทย', 'ภาษาไทย'),
+('1520100095015', 1052500514, '4', 'นางสาว', 'จิตพิสุทธิ์', 'อินต๊ะสืบ', 15, 'ชำนาญการ', 1311, 'ภาษาไทย', 'ภาษาไทย'),
 ('1520100095040', 1052500531, '4', 'นางสาว', 'ญาดา', 'หมื่นตาบุตร', 99, 'ไม่มีวิทยฐานะ', 1339, 'ภาษาอังกฤษ', 'ภาษาอังกฤษ'),
 ('1520100108001', 1051510309, '4', 'นางสาว', 'เกษสุดา', 'เมืองเย็น', 99, 'ไม่มีวิทยฐานะ', 1344, 'ภาษาจีน', 'ภาษาจีน'),
 ('1520100114168', 1052500529, '4', 'นางสาว', 'ชนากานต์', 'ก้อนแหวน', 99, 'ไม่มีวิทยฐานะ', 1394, 'วิทยาศาสตร์ (ประถมศึกษา/ม.ต้น)', 'เคมี'),
@@ -3839,13 +3762,13 @@ ALTER TABLE `images`
 -- Indexes for table `kpi_answers`
 --
 ALTER TABLE `kpi_answers`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`supervisor_p_id`,`teacher_t_pid`,`subject_code`,`inspection_time`);
 
 --
 -- Indexes for table `kpi_indicator_suggestions`
 --
 ALTER TABLE `kpi_indicator_suggestions`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`supervisor_p_id`,`teacher_t_pid`,`subject_code`,`inspection_time`);
 
 --
 -- Indexes for table `kpi_questions`
@@ -3863,13 +3786,31 @@ ALTER TABLE `quick_win`
 -- Indexes for table `satisfaction_answers`
 --
 ALTER TABLE `satisfaction_answers`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`supervisor_p_id`,`teacher_t_pid`,`subject_code`,`inspection_time`);
 
 --
 -- Indexes for table `supervision_sessions`
 --
 ALTER TABLE `supervision_sessions`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`supervisor_p_id`,`teacher_t_pid`,`subject_code`,`inspection_time`);
+
+--
+-- Indexes for table `supervisor`
+--
+ALTER TABLE `supervisor`
+  ADD PRIMARY KEY (`p_id`);
+
+--
+-- Indexes for table `teacher`
+--
+ALTER TABLE `teacher`
+  ADD PRIMARY KEY (`t_pid`);
+
+--
+-- Indexes for table `teacher_core_assignments`
+--
+ALTER TABLE `teacher_core_assignments`
+  ADD PRIMARY KEY (`t_pid`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -3879,7 +3820,7 @@ ALTER TABLE `supervision_sessions`
 -- AUTO_INCREMENT for table `certificate_log`
 --
 ALTER TABLE `certificate_log`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `images`
@@ -3888,34 +3829,10 @@ ALTER TABLE `images`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `kpi_answers`
---
-ALTER TABLE `kpi_answers`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=121;
-
---
--- AUTO_INCREMENT for table `kpi_indicator_suggestions`
---
-ALTER TABLE `kpi_indicator_suggestions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
-
---
 -- AUTO_INCREMENT for table `quick_win`
 --
 ALTER TABLE `quick_win`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT for table `satisfaction_answers`
---
-ALTER TABLE `satisfaction_answers`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
-
---
--- AUTO_INCREMENT for table `supervision_sessions`
---
-ALTER TABLE `supervision_sessions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

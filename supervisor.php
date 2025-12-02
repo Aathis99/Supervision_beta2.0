@@ -17,8 +17,6 @@
             <i class="fas fa-file-alt"></i> <span class="fw-bold">แบบบันทึกข้อมูลผู้นิเทศ และ ผู้รับนิเทศ</span>
         </div>
         
-        <form method="POST" action="summary.php" onsubmit="return validateSelection(event);"> 
-        
             <div class="card-body">
                 <h5 class="card-title fw-bold">ข้อมูลผู้นิเทศ</h5>
                 <hr>

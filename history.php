@@ -83,7 +83,7 @@ if ($result->num_rows > 0) {
     }
 }
 $stmt->close();
-$conn->close();
+// $conn->close(); // ⭐️ FIX: ลบการปิด connection ที่นี่ เพราะจะทำให้หน้าอื่นที่ require db_connect.php ทำงานไม่ได้
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -115,7 +115,7 @@ $conn->close();
     <div class="container mt-5">
         <div class="card shadow-lg p-4">
             <h2 class="card-title text-center mb-4">
-                <i class="fas fa-history"></i> ประวัติการนิเทศ และ Quick Win
+                <i class="fas fa-history"></i> ประวัติการนิเทศ และ จุดเน้น
             </h2>
 
             <form method="GET" action="history.php" class="mb-4">

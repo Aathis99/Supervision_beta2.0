@@ -46,7 +46,7 @@ if (isset($_GET['delete_image'])) {
         }
     }
     // Redirect กลับมาที่หน้ารายงานเดิมเพื่อเคลียร์ query string
-    header("Location: supervision_report.php");
+    header("Location: supervision_report.php?session_id=" . $session_id);
     exit();
 }
 
@@ -281,6 +281,12 @@ while ($row = $result_images->fetch_assoc()) {
                                 <a href="<?= htmlspecialchars($uploadDir . $img['file_name']) ?>" target="_blank">
                                     <img src="<?= htmlspecialchars($uploadDir . $img['file_name']) ?>" alt="Uploaded Image" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
                                 </a>
+                                <!-- ⭐️ เพิ่มปุ่มลบรูปภาพ (จะแสดงเฉพาะในมุมมองปกติ ไม่แสดงตอนพิมพ์) ⭐️ -->
+                                <div class="mt-2 no-print">
+                                    <a href="?session_id=<?= $session_id ?>&delete_image=<?= $img['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรูปภาพนี้?');">
+                                        <i class="fas fa-trash-alt"></i> ลบ
+                                    </a>
+                                </div>
                             </div>
                         <?php endforeach; ?>
                     </div>

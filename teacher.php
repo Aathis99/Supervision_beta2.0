@@ -54,20 +54,18 @@
                </div>
                <!-- ⭐️ เพิ่มปุ่มย้อนกลับ ⭐️ -->
                <div class="col-auto">
-                   <a href="history.php" class="btn btn-secondary btn-lg">
+                   <a href="index.php" class="btn btn-danger">
                        <i class="fas fa-arrow-left"></i> ย้อนกลับ
                    </a>
                </div>
                <div class="col-auto">
-                   <button type="submit" class="btn btn-success btn-lg">
+                   <button type="submit" class="btn btn-success btn-l">
                        ดำเนินการต่อ
                    </button>
                </div>
            </div>
 
        </div>
-
-       </form>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

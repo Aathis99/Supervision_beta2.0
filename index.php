@@ -119,7 +119,7 @@ if ($result->num_rows > 0) {
     }
 }
 $stmt->close();
-$conn->close();
+// $conn->close(); // ⭐️ FIX: ลบการปิด connection ที่นี่ เพราะจะทำให้หน้าอื่นที่ require db_connect.php ทำงานไม่ได้
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -155,7 +155,7 @@ $conn->close();
             <!-- ⭐️ ช่องสำหรับใส่ภาพ Banner ⭐️ -->
             <div class="text-center mb-4">
                 <!-- ❗️❗️ ให้เปลี่ยน src เป็น path หรือ URL ของรูปภาพ Banner ที่ต้องการ ❗️❗️ -->
-                <img src="images\banner001.jpg" class="img-fluid rounded" alt="แบนเนอร์ประวัติการนิเทศ">
+                <img src="images\banner.png" class="img-fluid rounded" alt="แบนเนอร์ประวัติการนิเทศ">
             </div>
             
             <!-- ⭐️ ส่วนของ Dashboard ที่เพิ่มเข้ามา -->
@@ -189,6 +189,9 @@ $conn->close();
                     <!-- ส่วนของผู้นิเทศ (เมื่อล็อกอิน) -->
                     <a href="supervision_start.php" class="btn btn-success">
                         <i class="fas fa-plus-circle"></i> บันทึกการนิเทศ
+                    </a>
+                    <a href="edit_teacher_list.php" class="btn btn-warning">
+                        <i class="fas fa-user-edit"></i> แก้ไขข้อมูลครู
                     </a>
                     <a href="graphs/satisfaction_dashboard.php" class="btn btn-info">
                         <i class="fas fa-chart-pie"></i> Dashboard
@@ -236,7 +239,7 @@ $conn->close();
                                         <span class="badge bg-primary rounded-pill fs-6"><?php echo $total_count; ?></span>
                                         <br>
                                         <small class="text-muted" style="font-size: 0.8rem;">
-                                            (ปกติ: <?php echo $row['count_normal']; ?>, QW: <?php echo $row['count_quickwin']; ?>)
+                                            (รับการนิเทศ: <?php echo $row['count_normal']; ?>: จุดเน้น: <?php echo $row['count_quickwin']; ?>)
                                         </small>
                                     </td>
                                     <td class="text-center">

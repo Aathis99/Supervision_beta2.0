@@ -8,8 +8,14 @@ if (!isset($_SESSION['is_logged_in']) || $_SESSION['is_logged_in'] !== true) {
     header("Location: login.php"); // ถ้ายังไม่ล็อกอิน ให้ส่งกลับไปหน้า login.php
     exit;
 }
+
 // 1. เชื่อมต่อฐานข้อมูล
 require_once 'config/db_connect.php';
+
+// ดึงข้อมูลจาก Session มาใช้
+$inspection_data = $_SESSION['inspection_data'] ?? [];
+$supervisor_id = $inspection_data['s_p_id'] ?? ''; // ⭐️ Logic ใหม่: รับรหัสผู้นิเทศ
+$teacher_id = $inspection_data['t_pid'] ?? '';     // ⭐️ Logic ใหม่: รับรหัสครู
 
 // 2. ดึงข้อมูลตัวชี้วัดและคำถามทั้งหมดในครั้งเดียวด้วย JOIN
 $sql = "SELECT 
@@ -25,7 +31,7 @@ $sql = "SELECT
             ind.display_order ASC, q.display_order ASC";
 
 $result = $conn->query($sql);
-// test
+
 // 3. จัดกลุ่มข้อมูลให้อยู่ในรูปแบบที่ใช้งานง่าย
 $indicators = [];
 if ($result) {
@@ -37,32 +43,23 @@ if ($result) {
   }
 }
 
-// ดึงข้อมูลจาก Session มาใช้
-$inspection_data = $_SESSION['inspection_data'] ?? [];
-
-// ⭐️ ดึงข้อมูลครั้งที่นิเทศที่เคยถูกประเมินไปแล้วของอาจารย์คนนี้
-$used_times = [];
-if (isset($inspection_data['t_pid'])) {
-    $t_pid = $inspection_data['t_pid'];
-    // เตรียม Query เพื่อดึงครั้งที่นิเทศที่เคยมีอยู่แล้ว
-    $stmt_check = $conn->prepare("SELECT inspection_time FROM supervision_sessions WHERE teacher_t_pid = ?");
-    $stmt_check->bind_param("s", $t_pid);
+// ⭐️ Logic ใหม่: ดึงข้อมูลประวัติการนิเทศ โดยเช็คคู่กันระหว่าง (ผู้นิเทศ + ครู)
+// เพื่อดูว่าคู่หู่นี้ เคยนิเทศครั้งที่เท่าไหร่ไปแล้วบ้าง และเป็นวิชาอะไร
+$history_info = [];
+if (!empty($supervisor_id) && !empty($teacher_id)) {
+    $stmt_check = $conn->prepare("SELECT inspection_time, subject_code FROM supervision_sessions WHERE supervisor_p_id = ? AND teacher_t_pid = ?");
+    $stmt_check->bind_param("ss", $supervisor_id, $teacher_id);
     $stmt_check->execute();
     $result_check = $stmt_check->get_result();
     while ($row_check = $result_check->fetch_assoc()) {
-        $used_times[] = $row_check['inspection_time'];
+        // เก็บข้อมูลไว้แสดงใน Dropdown ว่าครั้งนี้เคยนิเทศวิชาอะไรไปแล้ว
+        $history_info[$row_check['inspection_time']][] = $row_check['subject_code'];
     }
     $stmt_check->close();
 }
 ?>
-<!-- ไม่ต้องมี <html> <head> <body> เพราะไฟล์นี้จะถูก include -->
-
-<!-- แบบฟอร์มหลักที่รวมทุกอย่าง -->
 <form id="evaluationForm" method="POST" action="save_kpi_data.php" enctype="multipart/form-data" onsubmit="return validateKpiForm()">
 
-  <!-- ================================================== -->
-  <!-- ===== ส่วนแสดงข้อมูลและกรอกข้อมูลการนิเทศ (ย้ายมาที่นี่) ===== -->
-  <!-- ================================================== -->
   <h4 class="fw-bold text-primary">ข้อมูลผู้นิเทศ</h4>
   <div class="row mb-4">
     <div class="col-md-6">
@@ -76,6 +73,11 @@ if (isset($inspection_data['t_pid'])) {
   <hr class="my-4">
 
   <h4 class="fw-bold text-success">กรอกข้อมูลการนิเทศ</h4>
+  
+  <div class="alert alert-info py-2">
+    <small><i class="fas fa-info-circle"></i> ท่านสามารถเลือก "ครั้งที่นิเทศ" ซ้ำกับเดิมได้ หากเป็นการนิเทศใน <strong>รหัสวิชาอื่น</strong></small>
+  </div>
+
   <div class="row g-3 mt-2 mb-4">
     <div class="col-md-6">
       <label for="subject_code" class="form-label fw-bold">รหัสวิชา</label>
@@ -90,26 +92,26 @@ if (isset($inspection_data['t_pid'])) {
       <select id="inspection_time" name="inspection_time" class="form-select" required>
         <option value="" disabled selected>-- เลือกครั้งที่นิเทศ --</option>
         <?php for ($i = 1; $i <= 9; $i++): 
-            $is_disabled = in_array($i, $used_times);
-            $option_text = $i . ($is_disabled ? ' (ประเมินแล้ว)' : '');
+            // ⭐️ Logic ใหม่: แสดงข้อความแจ้งเตือน แต่ไม่ Disable (เพื่อให้บันทึกวิชาใหม่ในครั้งเดิมได้)
+            $history_text = "";
+            if (isset($history_info[$i])) {
+                $subjects = implode(', ', $history_info[$i]);
+                $history_text = " (เคยนิเทศ: $subjects)";
+            }
         ?>
-          <option value="<?php echo $i; ?>" <?php echo $is_disabled ? 'disabled' : ''; ?>>
-            <?php echo $option_text; ?>
+          <option value="<?php echo $i; ?>">
+            <?php echo $i . $history_text; ?>
           </option>
         <?php endfor; ?>
       </select>
     </div>
     <div class="col-md-6">
           <label for="supervision_date" class="form-label fw-bold">วันที่การนิเทศ</label>
-          <input type="date" id="supervision_date" name="supervision_date" class="form-control" required>
+          <input type="date" id="supervision_date" name="supervision_date" class="form-control" value="<?php echo date('Y-m-d'); ?>" required>
       </div>
   </div>
 
   <hr class="my-5">
-
-  <!-- ================================================== -->
-  <!-- ===== ส่วนของตัวชี้วัดและคำถาม (ของเดิม) ===== -->
-  <!-- ================================================== -->
 
   <?php foreach ($indicators as $indicator_id => $indicator_data) : ?>
     <div class="section-header mb-3">
@@ -155,7 +157,6 @@ if (isset($inspection_data['t_pid'])) {
           </div>
         </div>
       <?php endforeach; ?>
-      <!-- ส่วนสำหรับ "ข้อเสนอแนะเพิ่มเติม" ของแต่ละตัวชี้วัด -->
       <div class="card mb-4">
         <div class="card-body p-4">
           <div class="mb-3">
@@ -167,35 +168,11 @@ if (isset($inspection_data['t_pid'])) {
     <?php endif; ?>
   <?php endforeach; ?>
 
-  <!-- ================================================== -->
-  <!-- ===== ส่วนของข้อเสนอแนะภาพรวม (ของเดิม) ===== -->
-  <!-- ================================================== -->
   <div class="card mt-4 border-primary">
     <div class="card-header bg-primary text-white fw-bold">ข้อเสนอแนะเพิ่มเติม</div>
     <div class="card-body">
       <textarea class="form-control" id="overall_suggestion" name="overall_suggestion" rows="4" placeholder="กรอกข้อเสนอแนะเพิ่มเติมเกี่ยวกับการนิเทศครั้งนี้..."></textarea>
     </div>
-  </div>
-
-  <!-- ================================================== -->
-  <!-- ===== ส่วนอัปโหลดรูปภาพ (เพิ่มเข้ามาใหม่) ===== -->
-  <!-- ================================================== -->
-  <div class="card mt-4 border-info">
-      <div class="card-header bg-info text-dark fw-bold">
-          <i class="fas fa-images"></i> รูปภาพประกอบการนิเทศ (สูงสุด 2 รูป)
-      </div>
-      <div class="card-body">
-          <div class="upload-form">
-              <p>เลือกไฟล์รูปภาพ (JPG, PNG, GIF):</p>
-              <input type="file" id="image_upload_input" class="form-control" name="image_upload[]" accept="image/jpeg,image/png,image/gif" multiple>
-              <div class="form-text">คุณสามารถเลือกหลายไฟล์พร้อมกันได้ (โดยการกด Ctrl/Cmd ค้างไว้)</div>
-
-              <!-- ส่วนสำหรับแสดงตัวอย่างรูปภาพ -->
-              <div id="image-preview-container" class="image-gallery mt-3">
-                  <!-- รูปตัวอย่างจะถูกเพิ่มที่นี่โดย JavaScript -->
-              </div>
-          </div>
-      </div>
   </div>
 
   <div class="d-flex justify-content-center my-4">
@@ -206,7 +183,7 @@ if (isset($inspection_data['t_pid'])) {
 </form>
 
 <style>
-    /* สไตล์สำหรับส่วนแสดงรูปภาพและปุ่มลบ (ถ้ามี) */
+    /* สไตล์เดิมที่ให้มา */
     .image-gallery {
         display: flex;
         flex-wrap: wrap;
@@ -239,7 +216,6 @@ if (isset($inspection_data['t_pid'])) {
     .delete-btn:hover {
         background-color: #c82333;
     }
-    /* สไตล์สำหรับปุ่มลบรูปภาพตัวอย่าง */
     .remove-preview-btn {
         position: absolute;
         top: 5px;
@@ -253,12 +229,10 @@ if (isset($inspection_data['t_pid'])) {
     }
 </style>
 
-<!-- ⭐️ ปุ่มสำหรับเลื่อนลงล่างสุด (สไตล์ Bootstrap 5) ⭐️ -->
 <button onclick="scrollToBottom()" class="btn btn-primary rounded-pill position-fixed bottom-0 end-0 m-3 shadow" title="เลื่อนลงล่างสุด" style="z-index: 99;">
   <i class="fas fa-arrow-down"></i>
 </button>
 
-<!-- ⭐️ [ตัวเลือกเสริม] ปุ่มสำหรับเลื่อนขึ้นบนสุด (สไตล์ Bootstrap 5) ⭐️ -->
 <button onclick="scrollToTop()" id="scrollToTopBtn" class="btn btn-secondary rounded-pill position-fixed bottom-0 end-0 m-3 shadow" title="เลื่อนขึ้นบนสุด" style="z-index: 99; margin-bottom: 80px !important; display: none;">
   <i class="fas fa-arrow-up"></i>
 </button>
@@ -307,67 +281,24 @@ if (isset($inspection_data['t_pid'])) {
     }
   };
 
-  // --- JavaScript สำหรับการแสดงตัวอย่างรูปภาพ ---
+  /* 🔴 ปิดการทำงาน JS ส่วนรูปภาพชั่วคราว เพื่อไม่ให้เกิด Error
+     เพราะ HTML ส่วน input file ถูก Comment ออกไปแล้ว 
+  */
+  /*
   const fileInput = document.getElementById('image_upload_input');
   const previewContainer = document.getElementById('image-preview-container');
-  const dataTransfer = new DataTransfer(); // Object สำหรับเก็บไฟล์ที่ยังคงอยู่
+  const dataTransfer = new DataTransfer(); 
 
-  fileInput.addEventListener('change', handleFileSelect);
+  if(fileInput) { // เช็คว่ามี element นี้อยู่จริงไหม
+      fileInput.addEventListener('change', handleFileSelect);
+  }
 
   function handleFileSelect(event) {
-      const files = event.target.files;
-
-      // เพิ่มไฟล์ใหม่เข้าไปใน DataTransfer
-      for (const file of files) {
-          dataTransfer.items.add(file);
-      }
-
-      // อัปเดตไฟล์ใน input และแสดงตัวอย่าง
-      fileInput.files = dataTransfer.files;
-      updatePreview();
+      // ... (Code เดิม) ...
   }
 
   function updatePreview() {
-      previewContainer.innerHTML = ''; // ล้างตัวอย่างเก่า
-
-      for (let i = 0; i < dataTransfer.files.length; i++) {
-          const file = dataTransfer.files[i];
-          const reader = new FileReader();
-
-          reader.onload = function(e) {
-              // สร้าง container สำหรับรูปและปุ่มลบ
-              const previewItem = document.createElement('div');
-              previewItem.className = 'image-item';
-
-              // สร้างรูปภาพ
-              const img = document.createElement('img');
-              img.src = e.target.result;
-
-              // สร้างปุ่มลบ
-              const removeBtn = document.createElement('button');
-              removeBtn.innerHTML = '&times;'; // เครื่องหมายกากบาท
-              removeBtn.className = 'remove-preview-btn';
-              removeBtn.title = 'ลบรูปนี้';
-              removeBtn.onclick = function() {
-                  // สร้าง DataTransfer ใหม่โดยไม่รวมไฟล์ที่ถูกลบ
-                  const newFiles = new DataTransfer();
-                  for (const f of dataTransfer.files) {
-                      if (f !== file) {
-                          newFiles.items.add(f);
-                      }
-                  }
-                  dataTransfer.items.clear(); // ล้างของเก่า
-                  for (const f of newFiles.files) dataTransfer.items.add(f); // ใส่ของใหม่กลับเข้าไป
-                  fileInput.files = dataTransfer.files; // อัปเดตไฟล์ใน input
-                  updatePreview(); // วาดตัวอย่างใหม่
-              };
-
-              previewItem.appendChild(img);
-              previewItem.appendChild(removeBtn);
-              previewContainer.appendChild(previewItem);
-          }
-
-          reader.readAsDataURL(file);
-      }
+      // ... (Code เดิม) ...
   }
+  */
 </script>

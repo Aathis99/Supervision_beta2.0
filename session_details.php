@@ -66,13 +66,18 @@ $sql_history = "
     (
         -- ส่วนที่ 1: การนิเทศปกติ
         SELECT 
-            ss.id AS ref_id,
+            -- ⭐️ FIX: เปลี่ยนจากการใช้ id มาใช้ Composite Key ทั้ง 4 ตัว
+            ss.supervisor_p_id,
+            ss.teacher_t_pid,
+            ss.subject_code,
+            ss.inspection_time,
             'normal' AS session_type,
             ss.supervision_date,
             ss.inspection_time AS time_info,
             ss.subject_name AS topic,
             CONCAT(sp.PrefixName, sp.fname, ' ', sp.lname) AS supervisor_full_name,
-            ss.satisfaction_submitted AS status
+            -- ⭐️ FIX: ตรวจสอบว่ามีข้อมูลในตาราง satisfaction_answers หรือไม่ เพื่อกำหนดสถานะ
+            (CASE WHEN EXISTS (SELECT 1 FROM satisfaction_answers sa WHERE sa.supervisor_p_id = ss.supervisor_p_id AND sa.teacher_t_pid = ss.teacher_t_pid AND sa.subject_code = ss.subject_code AND sa.inspection_time = ss.inspection_time) THEN 1 ELSE 0 END) AS status
         FROM supervision_sessions ss
         LEFT JOIN supervisor sp ON ss.supervisor_p_id = sp.p_id
         WHERE ss.teacher_t_pid = ?
@@ -81,7 +86,11 @@ $sql_history = "
     (
         -- ส่วนที่ 2: Quick Win
         SELECT 
-            qw.id AS ref_id,
+            -- ⭐️ FIX: สร้างคอลัมน์ว่างเพื่อให้ UNION ALL ทำงานได้
+            NULL AS supervisor_p_id,
+            NULL AS teacher_t_pid,
+            NULL AS subject_code,
+            NULL AS inspection_time,
             'quickwin' AS session_type,
             qw.supervision_date,
             '-' AS time_info, -- Quick Win ไม่มีครั้งที่ หรือ เวลาที่ชัดเจนในตาราง
@@ -152,7 +161,7 @@ $conn->close();
 
             <div class="table-responsive">
                 <table class="table table-striped table-hover align-middle">
-                    <thead class="table-dark">
+                    <thead class="table-primary">
                         <tr class="text-center">
                             <th scope="col" style="width: 15%;">วันที่</th>
                             <th scope="col" style="width: 10%;">ประเภท</th>
@@ -175,10 +184,10 @@ $conn->close();
                                     
                                     <td class="text-center">
                                         <?php if ($row['session_type'] === 'normal'): ?>
-                                            <span class="badge badge-normal">นิเทศปกติ</span><br>
+                                            <span class="badge badge-normal">นิเทศ</span><br>
                                             <small class="text-muted">ครั้งที่ <?php echo $row['time_info']; ?></small>
                                         <?php else: ?>
-                                            <span class="badge badge-qw">Quick Win</span>
+                                            <span class="badge badge-qw">จุดเน้น (Quick Win)</span>
                                         <?php endif; ?>
                                     </td>
 
@@ -193,18 +202,22 @@ $conn->close();
                                     <td class="text-center">
                                         <?php if ($row['session_type'] === 'normal'): ?>
                                             <div class="btn-group" role="group">
-                                                <a href="supervision_report.php?session_id=<?php echo $row['ref_id']; ?>" class="btn btn-sm btn-info text-white" title="ดูรายงาน">
-                                                    <i class="fas fa-file-alt"></i> รายงาน
-                                                </a>
+                                                <!-- ⭐️ FIX: สร้างฟอร์มเพื่อส่ง Composite Key ไปยังหน้ารายงาน -->
+                                                <form action="supervision_report.php" method="GET" style="display:inline;" target="_blank">
+                                                    <input type="hidden" name="s_pid" value="<?php echo $row['supervisor_p_id']; ?>">
+                                                    <input type="hidden" name="t_pid" value="<?php echo $row['teacher_t_pid']; ?>">
+                                                    <input type="hidden" name="sub_code" value="<?php echo $row['subject_code']; ?>">
+                                                    <input type="hidden" name="time" value="<?php echo $row['inspection_time']; ?>">
+                                                    <button type="submit" class="btn btn-sm btn-info text-white" title="ดูรายงาน"><i class="fas fa-file-alt"></i> รายงาน</button>
+                                                </form>
                                                 
                                                 <?php if (!$is_supervisor): ?>
                                                     <?php if ($row['status'] == 0): ?>
-                                                        <a href="satisfaction_summary.php?session_id=<?php echo $row['ref_id']; ?>" class="btn btn-sm btn-warning" title="ประเมิน">
+                                                        <a href="#" class="btn btn-sm btn-warning" title="ประเมิน">
                                                             <i class="fas fa-star"></i> ประเมิน
                                                         </a>
                                                     <?php else: ?>
-                                                        <form method="POST" action="certificate.php" style="display:inline;" target="_blank">
-                                                            <input type="hidden" name="session_id" value="<?php echo $row['ref_id']; ?>">
+                                                        <form method="POST" action="certificate.php" style="display:inline;" target="_blank">                                                           
                                                             <button type="submit" class="btn btn-sm btn-success" title="เกียรติบัตร">
                                                                 <i class="fas fa-certificate"></i> เกียรติบัตร
                                                             </button>
@@ -227,7 +240,7 @@ $conn->close();
             </div>
 
             <div class="text-center mt-4">
-                <a href="history.php" class="btn btn-secondary"><i class="fas fa-chevron-left"></i> กลับไปหน้าประวัติรวม</a>
+                <a href="index.php" class="btn btn-secondary"><i class="fas fa-chevron-left"></i> กลับไปหน้าประวัติรวม</a>
             </div>
         </div>
     </div>

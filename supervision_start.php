@@ -1,4 +1,6 @@
 <?php
+// ไฟล์: supervision_start.php
+
 // ⭐️ เริ่ม Session เพื่อใช้งานข้อมูลที่บันทึกไว้
 session_start();
 
@@ -18,8 +20,10 @@ if (isset($_GET['edit']) && $_GET['edit'] == 'true' && isset($_SESSION['inspecti
 // 1. นำเข้าไฟล์เชื่อมต่อฐานข้อมูล
 require_once 'config/db_connect.php'; 
 
-// ⭐️ เพิ่มแท็ก FORM ครอบทุกส่วน ⭐️
-echo '<form method="POST" action="summary.php" onsubmit="return validateSelection(event)">'; 
+// -----------------------------------------------------------------------------------------
+// ⭐️ จุดที่แก้ไข: เพิ่ม enctype="multipart/form-data" เพื่อให้รองรับการอัปโหลดรูปภาพ ⭐️
+// -----------------------------------------------------------------------------------------
+echo '<form method="POST" action="summary.php" onsubmit="return validateSelection(event)" enctype="multipart/form-data">'; 
 
 // 2. ส่วนเลือกข้อมูลผู้นิเทศ (ต้องไม่มีแท็ก <form> ในไฟล์นี้แล้ว)
 require_once 'supervisor.php'; 
