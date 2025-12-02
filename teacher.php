@@ -9,17 +9,19 @@
 
            <div class="col-md-6">
                <label for="teacher_name_input" class="form-label fw-bold">ชื่อผู้รับนิเทศ</label>
-               <input list="teacher_names_list" id="teacher_name_input" name="teacher_name"
-                   class="form-control search-field" value="<?php echo htmlspecialchars($inspection_data['teacher_name'] ?? ''); ?>"
-                   placeholder="-- พิมพ์เพื่อค้นหา --">
-
-               <datalist id="teacher_names_list">
-                   <?php
-                    if ($result_teachers) {
-                        // ข้อมูลจะถูกเติมโดย JavaScript
-                    }
-                    ?>
-               </datalist>
+               <div class="input-group">
+                   <input id="teacher_name_input" name="teacher_name"
+                       class="form-control search-field" value="<?php echo htmlspecialchars($inspection_data['teacher_name'] ?? ''); ?>"
+                       placeholder="-- พิมพ์ชื่อ-สกุล แล้วกดค้นหา --">
+                   <button class="btn btn-primary" type="button" id="search_teacher_button"><i class="fas fa-search"></i> ค้นหา</button>
+                   <datalist id="teacher_names_list">
+                       <?php
+                        if ($result_teachers) {
+                            // ข้อมูลจะถูกเติมโดย JavaScript
+                        }
+                        ?>
+                   </datalist>
+               </div>
            </div>
 
            <div class="col-md-6">
@@ -59,7 +61,7 @@
                    </a>
                </div>
                <div class="col-auto">
-                   <button type="submit" class="btn btn-success btn-l">
+                   <button type="submit" class="btn btn-success btn-l" onclick="return validateSelection(event);">
                        ดำเนินการต่อ
                    </button>
                </div>
@@ -69,27 +71,72 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        populateTeacherDatalist(); // เรียกฟังก์ชันเพื่อเติมรายชื่อครู
+        let allTeachers = []; // ⭐️ ย้ายการประกาศตัวแปรมาไว้ที่นี่
 
+        const searchButton = document.getElementById('search_teacher_button');
         const teacherInput = document.getElementById('teacher_name_input');
         const teacherList = document.getElementById('teacher_names_list');
 
-        // ตรวจจับการเลือกหรือพิมพ์ในช่องชื่อ
-        teacherInput.addEventListener('input', function(e) {
-            const inputValue = e.target.value;
-            let selectedPid = null;
+        // Event listener สำหรับปุ่มค้นหา
+        searchButton.addEventListener('click', function() {
+            const searchTerm = teacherInput.value.toLowerCase();
+            if (!searchTerm) return; // ถ้าไม่ได้พิมพ์อะไรก็ไม่ต้องทำอะไร
 
-            // วนลูปตรวจสอบว่าสิ่งที่พิมพ์ ตรงกับตัวเลือกใน Datalist หรือไม่
-            for (const option of teacherList.options) {
-                if (option.value === inputValue) {
-                    selectedPid = option.getAttribute('data-pid');
-                    break;
-                }
+            // ⭐️ กรองรายชื่อครูจาก allTeachers และจำกัดผลลัพธ์ 5 คนแรก
+            const filteredTeachers = allTeachers
+                .filter(teacher => teacher.full_name_display.toLowerCase().includes(searchTerm))
+                .slice(0, 5);
+
+            // ⭐️ เพิ่มการแจ้งเตือนหากไม่พบข้อมูล
+            if (filteredTeachers.length === 0) {
+                alert('ไม่พบรายชื่อครูที่ตรงกับคำค้นหา');
             }
 
-            if (selectedPid) {
-                fetchTeacherData(selectedPid);
+            // ⭐️ ล้าง datalist เดิมแล้วสร้างใหม่จากผลการค้นหา
+            teacherList.innerHTML = '';
+            filteredTeachers.forEach(teacher => {
+                const option = document.createElement('option');
+                option.value = teacher.full_name_display;
+                option.setAttribute('data-pid', teacher.t_pid);
+                teacherList.appendChild(option);
+            });
+
+            // ⭐️ ทำให้ input แสดง datalist ที่มีข้อมูลที่กรองแล้ว
+            teacherInput.setAttribute('list', 'teacher_names_list');
+            // ⭐️ สั่งให้ focus ที่ input อีกครั้งเพื่อให้แน่ใจว่า datalist จะแสดงขึ้นมา
+            teacherInput.focus();
+        });
+
+        // ⭐️ เรียกฟังก์ชันเพื่อดึงข้อมูลครูหลังจากตั้งค่าทุกอย่างแล้ว
+        // และส่งตัวแปร allTeachers เข้าไปเพื่อให้ฟังก์ชันสามารถอัปเดตค่าได้
+        populateTeacherDatalist(teachers => { allTeachers = teachers; });
+
+
+        // Event listener สำหรับการเลือกจาก datalist หรือการพิมพ์
+        teacherInput.addEventListener('input', function(e) {
+            // ⭐️ ปรับปรุง Logic: ให้ทำงานเมื่อมีการเลือกรายการจาก datalist
+            const inputValue = teacherInput.value;
+            let selectedTeacher = null;
+
+            // ค้นหาข้อมูลครูที่ตรงกับค่าที่เลือกจาก `allTeachers`
+            // ตรวจสอบว่าค่าที่ป้อนตรงกับรายชื่อใน allTeachers หรือไม่
+            // ซึ่งจะเกิดขึ้นเมื่อผู้ใช้เลือกรายการจาก datalist
+            if (allTeachers && allTeachers.length > 0) {
+                selectedTeacher = allTeachers.find(teacher => teacher.full_name_display === inputValue);
+            }
+
+            // ถ้าเจอครูที่ตรงกัน (หมายถึงผู้ใช้เลือกรายการแล้ว)
+            // ถ้าเจอครูที่ตรงกัน (ผู้ใช้ได้เลือกรายการแล้ว)
+            if (selectedTeacher) {
+                // ถ้ามีการเลือกรายการที่ถูกต้อง ให้ดึงข้อมูล
+                // ดึงข้อมูลครูคนนั้นมาแสดง
+                fetchTeacherData(selectedTeacher.t_pid);
+                // และซ่อน datalist อีกครั้ง
+                // และซ่อน datalist โดยการเอา attribute 'list' ออก
+                teacherInput.removeAttribute('list');
             } else {
+                // ถ้าผู้ใช้กำลังพิมพ์ หรือลบข้อความ แต่ยังไม่ได้เลือก
+                // ให้ล้างข้อมูลในช่องอื่นๆ เพื่อป้องกันข้อมูลเก่าค้างอยู่
                 clearTeacherData();
             }
         });
@@ -103,29 +150,26 @@
     });
 
     // ฟังก์ชันสำหรับดึงรายชื่อครูทั้งหมดมาใส่ใน Datalist
-    function populateTeacherDatalist() {
-        const datalist = document.getElementById('teacher_names_list');
+    // ⭐️ แก้ไขให้รับ callback function เพื่อส่งค่า allTeachers กลับไป
+    function populateTeacherDatalist(callback) {
         fetch('fetch_teacher.php?action=get_names')
             .then(response => response.json())
             .then(result => {
-                // ⭐️ แก้ไข: ตรวจสอบว่า request สำเร็จและมีข้อมูล data ที่เป็น array
+                let teachers = [];
                 if (result.success && Array.isArray(result.data)) {
-                    result.data.forEach(teacher => {
-                        const option = document.createElement('option');
-                        option.value = teacher.full_name_display;
-                        option.setAttribute('data-pid', teacher.t_pid);
-                        datalist.appendChild(option);
-                    });
+                    teachers = result.data;
+                    callback(teachers); // ⭐️ ส่งข้อมูลครูกลับไปที่ callback
                 }
 
                 // หลังจากเติมรายชื่อเสร็จ, ตรวจสอบว่ามีค่าที่เคยเลือกไว้หรือไม่
                 const initialTeacherName = document.getElementById('teacher_name_input').value;
                 if (initialTeacherName) {
-                    for (const option of datalist.options) {
-                        if (option.value === initialTeacherName) {
-                            fetchTeacherData(option.getAttribute('data-pid'));
-                            break;
-                        }
+                    // ⭐️ ค้นหาจาก teachers ที่เพิ่งดึงมา
+                    // เพื่อไม่ให้เกิดการแสดงผลที่ไม่ต้องการ
+                    const foundTeacher = teachers.find(teacher => teacher.full_name_display === initialTeacherName);
+                    if (foundTeacher) {
+                        // ถ้าเจอ ให้ดึงข้อมูลครูคนนั้นมาแสดง
+                        fetchTeacherData(foundTeacher.t_pid);
                     }
                 }
             })
