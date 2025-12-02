@@ -81,11 +81,11 @@ if (!empty($supervisor_id) && !empty($teacher_id)) {
   <div class="row g-3 mt-2 mb-4">
     <div class="col-md-6">
       <label for="subject_code" class="form-label fw-bold">รหัสวิชา</label>
-      <input type="text" id="subject_code" name="subject_code" class="form-control" placeholder="เช่น ท0001" required>
+      <input type="text" id="subject_code" name="subject_code" class="form-control" placeholder="เช่น ท0001" value="ท0001" required>
     </div>
     <div class="col-md-6">
       <label for="subject_name" class="form-label fw-bold">ชื่อวิชา</label>
-      <input type="text" id="subject_name" name="subject_name" class="form-control" placeholder="เช่น ภาษาไทย" required>
+      <input type="text" id="subject_name" name="subject_name" class="form-control" placeholder="เช่น ภาษาไทย" value="ภาษาไทย" required>
     </div>
     <div class="col-md-6">
       <label for="inspection_time" class="form-label fw-bold">ครั้งที่นิเทศ</label>
@@ -140,6 +140,7 @@ if (!empty($supervisor_id) && !empty($teacher_id)) {
                   id="q<?php echo $question_id; ?>-<?php echo $i; ?>"
                   value="<?php echo $i; ?>"
                   required
+                  <?php echo ($i == 3) ? 'checked' : ''; ?> 
                    /> <label class="form-check-label" for="q<?php echo $question_id; ?>-<?php echo $i; ?>"><?php echo $i; ?></label>
               </div>
             <?php endfor; ?>
@@ -152,7 +153,7 @@ if (!empty($supervisor_id) && !empty($teacher_id)) {
                 id="comments_<?php echo $question_id; ?>"
                 name="comments[<?php echo $question_id; ?>]"
                 rows="3"
-                placeholder="กรอกความคิดเห็นของคุณที่นี่..."></textarea>
+                placeholder="กรอกความคิดเห็นของคุณที่นี่...">ทดสอบกรอกข้อความในข้อค้นพบ</textarea>
             </div>
           </div>
         </div>
@@ -161,7 +162,7 @@ if (!empty($supervisor_id) && !empty($teacher_id)) {
         <div class="card-body p-4">
           <div class="mb-3">
             <label for="indicator_suggestion_<?php echo $indicator_id; ?>" class="form-label fw-bold">ข้อเสนอแนะ</label>
-            <textarea class="form-control" id="indicator_suggestion_<?php echo $indicator_id; ?>" name="indicator_suggestions[<?php echo $indicator_id; ?>]" rows="3" placeholder="กรอกข้อเสนอแนะ..."></textarea>
+            <textarea class="form-control" id="indicator_suggestion_<?php echo $indicator_id; ?>" name="indicator_suggestions[<?php echo $indicator_id; ?>]" rows="3" placeholder="กรอกข้อเสนอแนะ...">ทดสอบกรอกข้อความในข้อเสนอแนะ</textarea>
           </div>
         </div>
       </div>
@@ -171,7 +172,7 @@ if (!empty($supervisor_id) && !empty($teacher_id)) {
   <div class="card mt-4 border-primary">
     <div class="card-header bg-primary text-white fw-bold">ข้อเสนอแนะเพิ่มเติม</div>
     <div class="card-body">
-      <textarea class="form-control" id="overall_suggestion" name="overall_suggestion" rows="4" placeholder="กรอกข้อเสนอแนะเพิ่มเติมเกี่ยวกับการนิเทศครั้งนี้..."></textarea>
+      <textarea class="form-control" id="overall_suggestion" name="overall_suggestion" rows="4" placeholder="กรอกข้อเสนอแนะเพิ่มเติมเกี่ยวกับการนิเทศครั้งนี้...">ทดสอบกรอกข้อความในข้อเสนอแนะเพิ่มเติม</textarea>
     </div>
   </div>
 
