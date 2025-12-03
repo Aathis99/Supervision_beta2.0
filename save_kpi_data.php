@@ -129,6 +129,88 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt_suggestion->close();
         }
 
+
+        // ... (โค้ดส่วนเดิม) ...
+        if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
+
+            // ⭐️ FIX: ใช้ Absolute Path (ระบุพิกัดเต็มๆ จากรากเครื่อง)
+            // dirname(__DIR__) จะคืนค่าเป็น /var/www/html/supervision_beta2.0
+            $targetDir = dirname(__DIR__) . "/uploads/";
+
+            // 🔍 Debug: ถ้ายังไม่ได้ ให้เอา Comment บรรทัดล่างนี้ออก เพื่อดูว่ามันชี้ไปไหน
+            // echo "Trying to upload to: " . $targetDir; exit;
+
+            // เช็คว่ามีโฟลเดอร์ไหม (ถ้าทำตามขั้นตอน Terminal ข้างบนแล้ว โค้ดนี้จะผ่านฉลุย)
+            if (!file_exists($targetDir)) {
+                if (!mkdir($targetDir, 0777, true)) {
+                    throw new Exception("หาโฟลเดอร์ uploads ไม่เจอ และสร้างเองไม่ได้ (ติด Permission)");
+                }
+            }
+
+            // เช็คสิทธิ์การเขียน (ถ้าทำ chown แล้ว จะผ่านตรงนี้)
+            if (!is_writable($targetDir)) {
+                throw new Exception("โฟลเดอร์ uploads มีอยู่จริง แต่ PHP เขียนไฟล์ลงไปไม่ได้ (กรุณารัน chown www-data)");
+            }
+
+            // ... (ส่วน Loop บันทึกไฟล์ เหมือนเดิม) ...
+
+            // ... (โค้ดส่วนตรวจสอบ Permission และ Loop บันทึก เหมือนเดิม) ...
+
+            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
+            $count = count($_FILES['images']['name']);
+
+            // SQL: 4 คีย์หลัก + file_name
+            $sql_img = "INSERT INTO images (supervisor_p_id, teacher_t_pid, subject_code, inspection_time, file_name) 
+                        VALUES (?, ?, ?, ?, ?)";
+            $stmt_img = $conn->prepare($sql_img);
+            if (!$stmt_img) {
+                throw new Exception("Prepare failed (images): " . $conn->error);
+            }
+
+            // วนลูปบันทึกทีละรูป
+            for ($i = 0; $i < $count; $i++) {
+                if (!empty($_FILES['images']['name'][$i])) {
+
+                    // ตรวจสอบ Error จากการอัปโหลดของ PHP
+                    if ($_FILES['images']['error'][$i] !== UPLOAD_ERR_OK) {
+                        throw new Exception("FileUpload Error Code: " . $_FILES['images']['error'][$i]);
+                    }
+
+                    $fileName = basename($_FILES['images']['name'][$i]);
+                    $fileType = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+                    if (in_array($fileType, $allowedTypes)) {
+                        // ตั้งชื่อไฟล์ใหม่: img_รหัสครู_เวลา_ลำดับ.ext
+                        $newFileName = "img_" . $teacher_t_pid . "_" . time() . "_" . $i . "." . $fileType;
+                        $targetFilePath = $targetDir . $newFileName;
+
+                        // 1. พยายามย้ายไฟล์
+                        if (move_uploaded_file($_FILES['images']['tmp_name'][$i], $targetFilePath)) {
+                            // 2. บันทึกลงฐานข้อมูล
+                            $stmt_img->bind_param("sssis", $supervisor_p_id, $teacher_t_pid, $subject_code, $inspection_time, $newFileName);
+
+                            // ⭐️ จุดสำคัญ: เช็คว่า Execute สำเร็จไหม
+                            if (!$stmt_img->execute()) {
+                                // ลบไฟล์ทิ้งถ้าลง Database ไม่สำเร็จ เพื่อไม่ให้มีไฟล์ขยะ
+                                @unlink($targetFilePath);
+                                throw new Exception("Error saving image to DB: " . $stmt_img->error);
+                            }
+                        } else {
+                            throw new Exception("Failed to move uploaded file: " . $newFileName);
+                        }
+                    } else {
+                        throw new Exception("ไฟล์รูปภาพไม่รองรับนามสกุล: " . $fileType);
+                    }
+                }
+            }
+            $stmt_img->close();
+        }
+
+        // ... (ไป Commit Transaction ต่อ) ...
+
+
+
+
         // --- ส่วนที่ 3: จบการทำงาน (Commit) ---
         $conn->commit();
 

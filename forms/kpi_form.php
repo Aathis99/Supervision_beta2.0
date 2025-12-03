@@ -17,7 +17,7 @@ $inspection_data = $_SESSION['inspection_data'] ?? [];
 $supervisor_id = $inspection_data['s_p_id'] ?? '';
 $teacher_id = $inspection_data['t_pid'] ?? '';
 
-// 2. ดึงข้อมูลตัวชี้วัดและคำถาม (Logic เดิมที่ดีอยู่แล้ว)
+// 2. ดึงข้อมูลตัวชี้วัดและคำถาม
 $sql = "SELECT 
             ind.id AS indicator_id, 
             ind.title AS indicator_title,
@@ -34,19 +34,19 @@ $result = $conn->query($sql);
 
 // 3. จัดกลุ่มข้อมูล + ⭐️ เพิ่มตัวนับจำนวนคำถาม ($total_questions_count)
 $indicators = [];
-$total_questions_count = 0; // ตัวแปรนี้สำคัญมาก เอาไว้ใช้ใน JavaScript
+$total_questions_count = 0;
 
 if ($result) {
   while ($row = $result->fetch_assoc()) {
     $indicators[$row['indicator_id']]['title'] = $row['indicator_title'];
     if ($row['question_id']) {
       $indicators[$row['indicator_id']]['questions'][] = $row;
-      $total_questions_count++; // นับเพิ่มทีละ 1 เมื่อเจอคำถาม
+      $total_questions_count++;
     }
   }
 }
 
-// ดึงประวัติการนิเทศ (Logic เดิม)
+// ดึงประวัติการนิเทศ
 $history_info = [];
 if (!empty($supervisor_id) && !empty($teacher_id)) {
   $stmt_check = $conn->prepare("SELECT inspection_time, subject_code FROM supervision_sessions WHERE supervisor_p_id = ? AND teacher_t_pid = ?");
@@ -176,12 +176,122 @@ if (!empty($supervisor_id) && !empty($teacher_id)) {
     </div>
   </div>
 
+  <div class="card mt-4 border-info">
+    <div class="card-header bg-info text-white fw-bold">
+      <i class="fas fa-images"></i> อัปโหลดรูปภาพประกอบ (สูงสุด 2 รูป)
+    </div>
+    <div class="card-body">
+
+      <input type="file" id="imageInput" name="images[]" accept="image/*" multiple style="display: none;" onchange="handleFiles(this)">
+
+      <div class="d-flex align-items-center mb-3">
+        <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('imageInput').click()">
+          <i class="fas fa-plus"></i> เลือกรูปภาพ
+        </button>
+        <small class="text-muted ms-3">* รองรับไฟล์ .jpg, .png (ไม่เกิน 2 รูป)</small>
+      </div>
+
+      <div id="previewContainer" class="d-flex flex-wrap gap-3"></div>
+    </div>
+  </div>
+
   <div class="d-flex justify-content-center my-4">
     <button type="submit" class="btn btn-success fs-5 btn-hover-blue px-4 py-2">
       บันทึกข้อมูล
     </button>
   </div>
 </form>
+
+<style>
+  .img-preview-wrapper {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .img-preview-wrapper img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+  }
+
+  .remove-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
+
+<script>
+  let selectedFiles = [];
+
+  function handleFiles(input) {
+    const files = Array.from(input.files);
+
+    if (selectedFiles.length + files.length > 2) {
+      alert('อัปโหลดได้สูงสุดแค่ 2 รูปเท่านั้น');
+      return;
+    }
+
+    files.forEach(file => {
+      if (selectedFiles.length < 2) {
+        selectedFiles.push(file);
+      }
+    });
+
+    renderPreview();
+    updateInputFiles();
+  }
+
+  function renderPreview() {
+    const container = document.getElementById('previewContainer');
+    container.innerHTML = '';
+
+    selectedFiles.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'img-preview-wrapper shadow-sm';
+        wrapper.innerHTML = `
+            <img src="${e.target.result}">
+            <button type="button" class="remove-btn" onclick="removeImage(${index})">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        container.appendChild(wrapper);
+      }
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function removeImage(index) {
+    selectedFiles.splice(index, 1);
+    renderPreview();
+    updateInputFiles();
+  }
+
+  function updateInputFiles() {
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('imageInput').files = dataTransfer.files;
+  }
+</script>
 
 <style>
   /* สไตล์เดิมที่ให้มา */
@@ -245,8 +355,6 @@ if (!empty($supervisor_id) && !empty($teacher_id)) {
 
 <script>
   const scrollToTopBtn = document.getElementById("scrollToTopBtn");
-
-  // ⭐️ รับค่าจำนวนคำถามทั้งหมดจาก PHP มาเก็บไว้ในตัวแปร JS
   const totalQuestions = <?php echo $total_questions_count; ?>;
 
   function validateKpiForm() {
@@ -255,21 +363,18 @@ if (!empty($supervisor_id) && !empty($teacher_id)) {
     const inspectionTime = document.getElementById('inspection_time').value;
     const supervisionDate = document.getElementById('supervision_date').value;
 
-    // 1. ตรวจสอบข้อมูลหลัก
     if (!subjectCode || !subjectName || !inspectionTime || !supervisionDate) {
       alert('กรุณากรอกข้อมูลการนิเทศ (รหัสวิชา, ชื่อวิชา, ครั้งที่, วันที่) ให้ครบถ้วน');
       document.getElementById('subject_code').focus();
       return false;
     }
 
-    // ⭐️ 2. ตรวจสอบว่าตอบคะแนนครบทุกข้อหรือไม่ (Logic ใหม่)
     const checkedRadios = document.querySelectorAll('input[type="radio"]:checked');
     if (checkedRadios.length < totalQuestions) {
       alert('คุณยังตอบคำถามไม่ครบ (ตอบไปแล้ว ' + checkedRadios.length + '/' + totalQuestions + ' ข้อ)');
       return false;
     }
 
-    // ยืนยันก่อนส่ง
     return confirm('ยืนยันการบันทึกข้อมูลใช่หรือไม่?');
   }
 
@@ -288,6 +393,4 @@ if (!empty($supervisor_id) && !empty($teacher_id)) {
       scrollToTopBtn.style.display = "none";
     }
   };
-
-  /* ปิด JS รูปภาพไว้ตามเดิม เพราะ HTML ส่วน input file ถูกซ่อนอยู่ */
 </script>

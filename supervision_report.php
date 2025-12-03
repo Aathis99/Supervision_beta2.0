@@ -24,13 +24,7 @@ if (isset($_GET['delete_image'])) {
     if ($imageId) {
         try {
             $conn->begin_transaction();
-            // ค้นหาชื่อไฟล์จากฐานข้อมูลก่อนลบ (ตรวจสอบว่าเป็นของ session นี้จริง)
-            // ⭐️ FIX: ตรวจสอบรูปภาพโดยอิงจาก Composite Key ของ session
-            $stmt = $conn->prepare("SELECT i.file_name FROM images i JOIN supervision_sessions ss ON i.session_id = ss.id WHERE i.id = ? AND ss.supervisor_p_id = ? AND ss.teacher_t_pid = ? AND ss.subject_code = ? AND ss.inspection_time = ?");
-            // This logic is flawed because `images` joins on `session_id` which doesn't exist.
-            // A better approach would be to add the composite key to the images table, but for now, we'll assume a direct link is not possible and remove the check.
-            // For now, let's assume a simpler check is enough, or that security is handled elsewhere.
-            // A better approach is needed if image ownership is critical.
+            // เดิมมีการ join กับ supervision_sessions แต่โครงสร้างตารางยังไม่รองรับ เลยใช้แบบง่ายไปก่อน
             $stmt = $conn->prepare("SELECT file_name FROM images WHERE id = ?");
             $stmt->bind_param("i", $imageId);
             $stmt->execute();
@@ -52,13 +46,12 @@ if (isset($_GET['delete_image'])) {
             $conn->rollback();
         }
     }
-    // ⭐️ FIX: Redirect กลับมาที่หน้ารายงานเดิมโดยใช้ Composite Key
+    // ⭐️ Redirect กลับมาที่หน้ารายงานเดิมโดยใช้ Composite Key
     header("Location: supervision_report.php?s_pid=$s_pid&t_pid=$t_pid&sub_code=$sub_code&time=$time");
     exit();
 }
 
 // 1. ดึงข้อมูลการนิเทศ (Supervision Info + Teacher + Supervisor)
-// ใช้ JOIN เพื่อดึงข้อมูลจากหลายตารางพร้อมกัน
 $sql_info = "SELECT 
                 ss.*,
                 /* ข้อมูลครู */
@@ -127,6 +120,20 @@ while ($row = $result_ans->fetch_assoc()) {
     $count_questions++;
 }
 
+// 2.1 คำนวณระดับคุณภาพจากคะแนนรวม (อิงตามเกณฑ์ 0–72)
+$quality_level = '-';
+if ($count_questions > 0) {
+    if ($total_score >= 54 && $total_score <= 72) {
+        $quality_level = 'ดีมาก';
+    } elseif ($total_score >= 36 && $total_score <= 53) {
+        $quality_level = 'ดี';
+    } elseif ($total_score >= 18 && $total_score <= 35) {
+        $quality_level = 'พอใช้';
+    } else { // 0–17
+        $quality_level = 'ปรับปรุง';
+    }
+}
+
 // 3. ดึงข้อเสนอแนะเพิ่มเติม (Suggestions)
 $sql_sugg = "SELECT indicator_id, suggestion_text FROM kpi_indicator_suggestions WHERE supervisor_p_id = ? AND teacher_t_pid = ? AND subject_code = ? AND inspection_time = ?";
 $stmt_sugg = $conn->prepare($sql_sugg);
@@ -140,20 +147,7 @@ while ($row = $result_sugg->fetch_assoc()) {
 }
 $stmt_sugg->close();
 
-// 4. ดึงรูปภาพประกอบ (เพิ่มเข้ามาใหม่)
-/*
-$sql_images = "SELECT id, file_name FROM images WHERE session_id = ? ORDER BY uploaded_on DESC";
-$stmt_images = $conn->prepare($sql_images);
-$stmt_images->bind_param("i", $session_id);
-$stmt_images->execute();
-$result_images = $stmt_images->get_result();
-$uploadedImages = [];
-while ($row = $result_images->fetch_assoc()) {
-    $uploadedImages[] = $row;
-}
-*/
-// ⭐️ FIX: The images table does not have a direct link. This feature might need to be re-evaluated or the table structure changed.
-// For now, this section will be disabled to prevent errors.
+// 4. ดึงรูปภาพประกอบ (ปิดการใช้งานชั่วคราว)
 $uploadedImages = [];
 ?>
 
@@ -267,8 +261,15 @@ $uploadedImages = [];
                     <tbody>
                         <tr style="background-color: white;">
                             <td class="text-end"><strong>คะแนนรวมทั้งหมด</strong></td>
-                            <td class="text-center fw-bold"><?php echo $total_score; ?> / <?php echo $count_questions * 3; ?></td>
-                            <td></td>
+                            <td class="text-center fw-bold">
+                                <?php echo $total_score; ?> / <?php echo $count_questions * 3; ?>
+                            </td>
+                            <td class="text-center fw-bold">
+                                ระดับคุณภาพ:
+                                <span class="badge bg-success">
+                                    <?php echo $quality_level; ?>
+                                </span>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -294,7 +295,6 @@ $uploadedImages = [];
                                 <a href="<?= htmlspecialchars($uploadDir . $img['file_name']) ?>" target="_blank">
                                     <img src="<?= htmlspecialchars($uploadDir . $img['file_name']) ?>" alt="Uploaded Image" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
                                 </a>
-                                <!-- ⭐️ เพิ่มปุ่มลบรูปภาพ (จะแสดงเฉพาะในมุมมองปกติ ไม่แสดงตอนพิมพ์) ⭐️ -->
                                 <div class="mt-2 no-print">
                                     <a href="?s_pid=<?= $s_pid ?>&t_pid=<?= $t_pid ?>&sub_code=<?= $sub_code ?>&time=<?= $time ?>&delete_image=<?= $img['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรูปภาพนี้?');">
                                         <i class="fas fa-trash-alt"></i> ลบ
@@ -313,7 +313,6 @@ $uploadedImages = [];
 
         </div>
     </div>
-
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
