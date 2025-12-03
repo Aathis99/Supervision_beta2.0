@@ -17,12 +17,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // รับข้อมูลจาก POST request
-$t_pid = $_POST['t_pid'] ?? null;
+$t_pid      = $_POST['t_pid']      ?? null;
 $prefixName = $_POST['PrefixName'] ?? '';
-$fname = $_POST['fname'] ?? '';
-$lname = $_POST['lname'] ?? '';
-$adm_name = $_POST['adm_name'] ?? '';
-$school_id = $_POST['school_id'] ?? null;
+$fname      = $_POST['fname']      ?? '';
+$lname      = $_POST['lname']      ?? '';
+$adm_name   = $_POST['adm_name']   ?? '';
+$school_id  = $_POST['school_id']  ?? null;
+
+// แปลง school_id ให้เป็น int (กันค่าประหลาด ๆ)
+$school_id = $school_id !== null ? (int)$school_id : null;
 
 // ตรวจสอบข้อมูลที่จำเป็น
 if (empty($t_pid) || empty($fname) || empty($lname) || empty($school_id)) {
@@ -34,11 +37,11 @@ if (empty($t_pid) || empty($fname) || empty($lname) || empty($school_id)) {
 // เตรียมคำสั่ง SQL สำหรับการอัปเดตข้อมูล
 $sql = "UPDATE teacher SET 
             PrefixName = ?, 
-            fname = ?, 
-            lname = ?, 
-            adm_name = ?, 
-            school_id = ? 
-        WHERE t_pid = ?";
+            fname      = ?, 
+            lname      = ?, 
+            adm_name   = ?, 
+            school_id  = ? 
+        WHERE t_pid    = ?";
 
 $stmt = $conn->prepare($sql);
 
@@ -49,7 +52,24 @@ if ($stmt === false) {
     exit;
 }
 
-$stmt->bind_param("ssssii", $prefixName, $fname, $lname, $adm_name, $school_id, $t_pid);
+/*
+ * bind_param:
+ *  PrefixName : string
+ *  fname      : string
+ *  lname      : string
+ *  adm_name   : string
+ *  school_id  : int
+ *  t_pid      : string (เก็บเป็น VARCHAR ใน DB)
+ */
+$stmt->bind_param(
+    "ssssis",
+    $prefixName,
+    $fname,
+    $lname,
+    $adm_name,
+    $school_id,
+    $t_pid
+);
 
 if ($stmt->execute()) {
     $response['success'] = true;

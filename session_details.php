@@ -1,6 +1,5 @@
 <?php
 // ไฟล์: session_details.php
-// ⭐️ 1. เริ่ม Session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -11,7 +10,6 @@ $is_supervisor = isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] =
 
 // 1. รับค่า teacher_pid
 $teacher_pid = null;
-// ⭐️ แก้ไข: ตรวจสอบจาก POST ก่อน แล้วค่อยไป GET
 if (isset($_POST['teacher_pid']) && !empty($_POST['teacher_pid'])) {
     $teacher_pid = $_POST['teacher_pid'];
 } elseif (isset($_GET['teacher_pid']) && !empty($_GET['teacher_pid'])) {
@@ -25,12 +23,11 @@ if ($teacher_pid === null) {
 $results = [];
 $teacher_info = null;
 
-// 2. ⭐️ แก้ไข: ดึงข้อมูลครูจากตาราง teacher โดยตรง (เพื่อให้แสดงข้อมูลได้แม้มีแค่ Quick Win)
+// 2. ดึงข้อมูลครู
 $sql_teacher = "SELECT 
                     CONCAT(t.PrefixName, t.fname, ' ', t.lname) AS teacher_full_name, 
                     s.SchoolName,
                     t.adm_name AS teacher_position, 
-                    -- ใช้ Logic จัดกลุ่มสาระเดิม
                     CASE
                         WHEN t.learning_group like '%ภาษาไทย%' THEN 'กลุ่มสาระการเรียนรู้ภาษาไทย'
                         WHEN t.learning_group like '%คณิตศาสตร์%' THEN 'กลุ่มสาระการเรียนรู้คณิตศาสตร์'
@@ -59,14 +56,10 @@ if ($result_teacher->num_rows > 0) {
 }
 $stmt_teacher->close();
 
-
-// 3. ⭐️ แก้ไข: ดึงประวัติรวม (UNION) ระหว่าง การนิเทศปกติ และ Quick Win
-// สร้างคอลัมน์ 'session_type' เพื่อแยกประเภท
+// 3. ดึงประวัติรวม (นิเทศปกติ + Quick Win)
 $sql_history = "
     (
-        -- ส่วนที่ 1: การนิเทศปกติ
         SELECT 
-            -- ⭐️ FIX: เปลี่ยนจากการใช้ id มาใช้ Composite Key ทั้ง 4 ตัว
             ss.supervisor_p_id,
             ss.teacher_t_pid,
             ss.subject_code,
@@ -76,27 +69,30 @@ $sql_history = "
             ss.inspection_time AS time_info,
             ss.subject_name AS topic,
             CONCAT(sp.PrefixName, sp.fname, ' ', sp.lname) AS supervisor_full_name,
-            -- ⭐️ FIX: ตรวจสอบว่ามีข้อมูลในตาราง satisfaction_answers หรือไม่ เพื่อกำหนดสถานะ
-            (CASE WHEN EXISTS (SELECT 1 FROM satisfaction_answers sa WHERE sa.supervisor_p_id = ss.supervisor_p_id AND sa.teacher_t_pid = ss.teacher_t_pid AND sa.subject_code = ss.subject_code AND sa.inspection_time = ss.inspection_time) THEN 1 ELSE 0 END) AS status
+            (CASE WHEN EXISTS (
+                SELECT 1 FROM satisfaction_answers sa 
+                WHERE sa.supervisor_p_id = ss.supervisor_p_id 
+                  AND sa.teacher_t_pid   = ss.teacher_t_pid 
+                  AND sa.subject_code    = ss.subject_code 
+                  AND sa.inspection_time = ss.inspection_time
+            ) THEN 1 ELSE 0 END) AS status
         FROM supervision_sessions ss
         LEFT JOIN supervisor sp ON ss.supervisor_p_id = sp.p_id
         WHERE ss.teacher_t_pid = ?
     )
     UNION ALL
     (
-        -- ส่วนที่ 2: Quick Win
         SELECT 
-            -- ⭐️ FIX: สร้างคอลัมน์ว่างเพื่อให้ UNION ALL ทำงานได้
             NULL AS supervisor_p_id,
             NULL AS teacher_t_pid,
             NULL AS subject_code,
             NULL AS inspection_time,
             'quickwin' AS session_type,
             qw.supervision_date,
-            '-' AS time_info, -- Quick Win ไม่มีครั้งที่ หรือ เวลาที่ชัดเจนในตาราง
-            qo.OptionText AS topic, -- ดึงชื่อหัวข้อ Quick Win
+            '-' AS time_info,
+            qo.OptionText AS topic,
             CONCAT(sp.PrefixName, sp.fname, ' ', sp.lname) AS supervisor_full_name,
-            2 AS status -- สมมติสถานะ 2 = ไม่ต้องประเมินความพึงพอใจ (หรือปรับตาม Business Logic)
+            2 AS status
         FROM quick_win qw
         LEFT JOIN supervisor sp ON qw.p_id = sp.p_id
         LEFT JOIN quickwin_options qo ON qw.options = qo.OptionID
@@ -106,7 +102,6 @@ $sql_history = "
 ";
 
 $stmt = $conn->prepare($sql_history);
-// Bind Parameter 2 ตัว (สำหรับ Normal และ Quick Win)
 $stmt->bind_param("ss", $teacher_pid, $teacher_pid);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -172,7 +167,8 @@ $conn->close();
                         <tr class="text-center">
                             <th scope="col" style="width: 15%;">วันที่</th>
                             <th scope="col" style="width: 10%;">ประเภท</th>
-                            <th scope="col" style="width: 25%;">หัวข้อ / วิชา</th>
+                            <!-- ⭐ จัดกลางหัวคอลัมน์วิชา -->
+                            <th scope="col" style="width: 25%;" class="text-center">หัวข้อ / วิชา</th>
                             <th scope="col" style="width: 20%;">ผู้นิเทศ</th>
                             <th scope="col" style="width: 30%;">การดำเนินการ</th>
                         </tr>
@@ -198,7 +194,8 @@ $conn->close();
                                         <?php endif; ?>
                                     </td>
 
-                                    <td>
+                                    <!-- ⭐ จัดกลางค่าของหัวข้อ / วิชา -->
+                                    <td class="text-center">
                                         <?php echo htmlspecialchars($row['topic']); ?>
                                     </td>
 
@@ -209,19 +206,19 @@ $conn->close();
                                     <td class="text-center">
                                         <?php if ($row['session_type'] === 'normal'): ?>
                                             <div class="btn-group" role="group">
-                                                <!-- ⭐️ FIX: สร้างฟอร์มเพื่อส่ง Composite Key ไปยังหน้ารายงาน -->
                                                 <form action="supervision_report.php" method="GET" style="display:inline;" target="_blank">
                                                     <input type="hidden" name="s_pid" value="<?php echo $row['supervisor_p_id']; ?>">
                                                     <input type="hidden" name="t_pid" value="<?php echo $row['teacher_t_pid']; ?>">
                                                     <input type="hidden" name="sub_code" value="<?php echo $row['subject_code']; ?>">
                                                     <input type="hidden" name="time" value="<?php echo $row['inspection_time']; ?>">
-                                                    <button type="submit" class="btn btn-sm btn-info text-white" title="ดูรายงาน"><i class="fas fa-file-alt"></i> รายงาน</button>
+                                                    <button type="submit" class="btn btn-sm btn-info text-white" title="ดูรายงาน">
+                                                        <i class="fas fa-file-alt"></i> รายงาน
+                                                    </button>
                                                 </form>
 
                                                 <?php if (!$is_supervisor): ?>
                                                     <?php if ($row['status'] == 0): ?>
                                                         <?php
-                                                        // ⭐️ FIX: แก้ไข Path และสร้าง URL สำหรับส่ง Composite Key ไปยังหน้าประเมิน
                                                         $satisfaction_url = "forms/satisfaction_form.php?" . http_build_query([
                                                             's_pid' => $row['supervisor_p_id'],
                                                             't_pid' => $row['teacher_t_pid'],
@@ -234,11 +231,6 @@ $conn->close();
                                                         </a>
                                                     <?php else: ?>
                                                         <form method="POST" action="certificate.php" style="display:inline;" target="_blank">
-                                                            <input type="hidden" name="s_pid" value="<?php echo htmlspecialchars($row['supervisor_p_id']); ?>">
-                                                            <input type="hidden" name="t_pid" value="<?php echo htmlspecialchars($row['teacher_t_pid']); ?>">
-                                                            <input type="hidden" name="sub_code" value="<?php echo htmlspecialchars($row['subject_code']); ?>">
-                                                            <input type="hidden" name="time" value="<?php echo htmlspecialchars($row['inspection_time']); ?>">
-
                                                             <button type="submit" class="btn btn-sm btn-success" title="เกียรติบัตร">
                                                                 <i class="fas fa-certificate"></i> เกียรติบัตร
                                                             </button>
@@ -261,7 +253,9 @@ $conn->close();
             </div>
 
             <div class="text-center mt-4">
-                <a href="index.php" class="btn btn-secondary"><i class="fas fa-chevron-left"></i> กลับไปหน้าประวัติรวม</a>
+                <a href="index.php" class="btn btn-secondary">
+                    <i class="fas fa-chevron-left"></i> กลับไปหน้าประวัติรวม
+                </a>
             </div>
         </div>
     </div>
