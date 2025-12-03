@@ -130,8 +130,15 @@ $conn->close();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        .badge-normal { background-color: #0d6efd; color: white; }
-        .badge-qw { background-color: #ffc107; color: black; }
+        .badge-normal {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        .badge-qw {
+            background-color: #ffc107;
+            color: black;
+        }
     </style>
 </head>
 
@@ -181,7 +188,7 @@ $conn->close();
                                     <td class="text-center">
                                         <?php echo (new DateTime($row['supervision_date']))->format('d/m/Y H:i'); ?> น.
                                     </td>
-                                    
+
                                     <td class="text-center">
                                         <?php if ($row['session_type'] === 'normal'): ?>
                                             <span class="badge badge-normal">นิเทศ</span><br>
@@ -210,23 +217,28 @@ $conn->close();
                                                     <input type="hidden" name="time" value="<?php echo $row['inspection_time']; ?>">
                                                     <button type="submit" class="btn btn-sm btn-info text-white" title="ดูรายงาน"><i class="fas fa-file-alt"></i> รายงาน</button>
                                                 </form>
-                                                
+
                                                 <?php if (!$is_supervisor): ?>
                                                     <?php if ($row['status'] == 0): ?>
                                                         <?php
-                                                            // ⭐️ FIX: แก้ไข Path และสร้าง URL สำหรับส่ง Composite Key ไปยังหน้าประเมิน
-                                                            $satisfaction_url = "forms/satisfaction_form.php?" . http_build_query([
-                                                                's_pid' => $row['supervisor_p_id'],
-                                                                't_pid' => $row['teacher_t_pid'],
-                                                                'sub_code' => $row['subject_code'],
-                                                                'time' => $row['inspection_time']
-                                                            ]);
+                                                        // ⭐️ FIX: แก้ไข Path และสร้าง URL สำหรับส่ง Composite Key ไปยังหน้าประเมิน
+                                                        $satisfaction_url = "forms/satisfaction_form.php?" . http_build_query([
+                                                            's_pid' => $row['supervisor_p_id'],
+                                                            't_pid' => $row['teacher_t_pid'],
+                                                            'sub_code' => $row['subject_code'],
+                                                            'time' => $row['inspection_time']
+                                                        ]);
                                                         ?>
                                                         <a href="<?php echo $satisfaction_url; ?>" class="btn btn-sm btn-warning" title="ประเมินความพึงพอใจ">
                                                             <i class="fas fa-star"></i> ประเมิน
                                                         </a>
                                                     <?php else: ?>
-                                                        <form method="POST" action="certificate.php" style="display:inline;" target="_blank">                                                           
+                                                        <form method="POST" action="certificate.php" style="display:inline;" target="_blank">
+                                                            <input type="hidden" name="s_pid" value="<?php echo htmlspecialchars($row['supervisor_p_id']); ?>">
+                                                            <input type="hidden" name="t_pid" value="<?php echo htmlspecialchars($row['teacher_t_pid']); ?>">
+                                                            <input type="hidden" name="sub_code" value="<?php echo htmlspecialchars($row['subject_code']); ?>">
+                                                            <input type="hidden" name="time" value="<?php echo htmlspecialchars($row['inspection_time']); ?>">
+
                                                             <button type="submit" class="btn btn-sm btn-success" title="เกียรติบัตร">
                                                                 <i class="fas fa-certificate"></i> เกียรติบัตร
                                                             </button>
@@ -239,7 +251,7 @@ $conn->close();
                                             <button type="button" class="btn btn-sm btn-secondary" disabled>
                                                 <i class="fas fa-info-circle"></i> ข้อมูลจุดเน้น
                                             </button>
-                                            <?php endif; ?>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -256,4 +268,5 @@ $conn->close();
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

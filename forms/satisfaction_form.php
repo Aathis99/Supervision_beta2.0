@@ -51,6 +51,7 @@ $conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -59,106 +60,119 @@ $conn->close();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="../css/styles.css">
 </head>
+
 <body>
-<div class="container my-5">
-    <div class="card shadow-lg">
-        <div class="card-header bg-warning text-dark text-center">
-            <h4 class="mb-0"><i class="fas fa-star"></i> แบบประเมินความพึงพอใจการนิเทศ</h4>
-        </div>
-        <div class="card-body p-4">
-
-            <div class="alert alert-info">
-                <div class="row">
-                    <div class="col-md-6"><strong>ผู้รับการนิเทศ:</strong> <?php echo htmlspecialchars($session_info['teacher_full_name']); ?></div>
-                    <div class="col-md-6"><strong>ผู้นิเทศ:</strong> <?php echo htmlspecialchars($session_info['supervisor_full_name']); ?></div>
-                    <div class="col-md-6"><strong>วิชา/หัวข้อ:</strong> <?php echo htmlspecialchars($session_info['subject_name']); ?></div>
-                    <div class="col-md-6"><strong>วันที่นิเทศ:</strong> <?php echo (new DateTime($session_info['supervision_date']))->format('d/m/Y'); ?></div>
-                </div>
+    <div class="container my-5">
+        <div class="card shadow-lg">
+            <div class="card-header bg-warning text-dark text-center">
+                <h4 class="mb-0"><i class="fas fa-star"></i> แบบประเมินความพึงพอใจการนิเทศ</h4>
             </div>
+            <div class="card-body p-4">
 
-            <?php if ($session_info['status'] == 1): ?>
-                <div class="alert alert-success text-center">
-                    <h5 class="alert-heading"><i class="fas fa-check-circle"></i> ท่านได้ทำการประเมินเรียบร้อยแล้ว</h5>
-                    <p>ขอขอบคุณสำหรับความคิดเห็นของท่าน</p>
-                    <a href="../session_details.php?teacher_pid=<?php echo urlencode($t_pid); ?>" class="btn btn-primary"><i class="fas fa-arrow-left"></i> กลับไปหน้าประวัติ</a>
+                <div class="alert alert-info">
+                    <div class="row">
+                        <div class="col-md-6"><strong>ผู้รับการนิเทศ:</strong> <?php echo htmlspecialchars($session_info['teacher_full_name']); ?></div>
+                        <div class="col-md-6"><strong>ผู้นิเทศ:</strong> <?php echo htmlspecialchars($session_info['supervisor_full_name']); ?></div>
+                        <div class="col-md-6"><strong>วิชา/หัวข้อ:</strong> <?php echo htmlspecialchars($session_info['subject_name']); ?></div>
+                        <div class="col-md-6"><strong>วันที่นิเทศ:</strong> <?php echo (new DateTime($session_info['supervision_date']))->format('d/m/Y'); ?></div>
+                    </div>
                 </div>
-            <?php else: ?>
-                <!-- แบบฟอร์มหลัก -->
-                <form id="satisfactionForm" method="POST" action="save_satisfaction.php">
-                    <!-- ส่ง Composite Key ไปกับฟอร์ม -->
-                    <input type="hidden" name="s_pid" value="<?php echo htmlspecialchars($s_pid); ?>">
-                    <input type="hidden" name="t_pid" value="<?php echo htmlspecialchars($t_pid); ?>">
-                    <input type="hidden" name="sub_code" value="<?php echo htmlspecialchars($sub_code); ?>">
-                    <input type="hidden" name="time" value="<?php echo htmlspecialchars($time); ?>">
 
-                    <p class="mb-2"><strong>คำชี้แจง :</strong> โปรดเลือกระดับความพึงพอใจที่ตรงกับความพึงพอใจของท่านมากที่สุด เกณฑ์การประเมินความพึงพอใจ
-                        มี 5 ระดับ ดังนี้ <br>5 หมายถึง มากที่สุด, 4 หมายถึงมาก, 3 หมายถึงปานกลาง, 2 หมายถึง น้อย, 1 หมายถึง น้อยที่สุด
-                    </p>
-                    <hr>
+                <?php if ($session_info['status'] == 1): ?>
+                    <div class="alert alert-success text-center">
+                        <h5 class="alert-heading"><i class="fas fa-check-circle"></i> ท่านได้ทำการประเมินเรียบร้อยแล้ว</h5>
+                        <p>ขอขอบคุณสำหรับความคิดเห็นของท่าน</p>
 
-                    <?php if (empty($questions)): ?>
-                        <div class="alert alert-warning">ไม่พบข้อคำถามในระบบ</div>
-                    <?php else: ?>
-                        <?php foreach ($questions as $question) : ?>
-                            <div class="card mb-3">
-                                <div class="card-body p-4">
-                                    <div class="mb-3">
-                                        <label class="form-label-question" for="rating_<?php echo $question['id']; ?>">
-                                            <?php echo htmlspecialchars($question['question_text']); ?>
-                                        </label>
-                                    </div>
+                        <div class="d-flex justify-content-center gap-2 mt-3">
+                            <a href="../session_details.php?teacher_pid=<?php echo urlencode($t_pid); ?>" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> กลับไปหน้าประวัติ
+                            </a>
 
-                                    <div class="d-flex justify-content-center flex-wrap">
-                                        <?php for ($i = 5; $i >= 1; $i--) : ?>
-                                            <div class="form-check form-check-inline mx-2">
-                                                <input
-                                                    class="form-check-input"
-                                                    type="radio"
-                                                    name="ratings[<?php echo $question['id']; ?>]"
-                                                    id="q<?php echo $question['id']; ?>-<?php echo $i; ?>"
-                                                    value="<?php echo $i; ?>"
-                                                    required
-                                                    <?php echo ($i == 5) ? 'checked' : ''; // ให้คะแนน 5 เป็นค่าเริ่มต้น ?>
-                                                />
-                                                <label class="form-check-label" for="q<?php echo $question['id']; ?>-<?php echo $i; ?>"><?php echo $i; ?></label>
-                                            </div>
-                                        <?php endfor; ?>
+                            <a href="../certificate.php?s_pid=<?php echo htmlspecialchars($s_pid); ?>&t_pid=<?php echo htmlspecialchars($t_pid); ?>&sub_code=<?php echo htmlspecialchars($sub_code); ?>&time=<?php echo htmlspecialchars($time); ?>"
+                                target="_blank"
+                                class="btn btn-success">
+                                <i class="fas fa-print"></i> พิมพ์เกียรติบัตร
+                            </a>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <!-- แบบฟอร์มหลัก -->
+                    <form id="satisfactionForm" method="POST" action="save_satisfaction.php">
+                        <!-- ส่ง Composite Key ไปกับฟอร์ม -->
+                        <input type="hidden" name="s_pid" value="<?php echo htmlspecialchars($s_pid); ?>">
+                        <input type="hidden" name="t_pid" value="<?php echo htmlspecialchars($t_pid); ?>">
+                        <input type="hidden" name="sub_code" value="<?php echo htmlspecialchars($sub_code); ?>">
+                        <input type="hidden" name="time" value="<?php echo htmlspecialchars($time); ?>">
+
+                        <p class="mb-2"><strong>คำชี้แจง :</strong> โปรดเลือกระดับความพึงพอใจที่ตรงกับความพึงพอใจของท่านมากที่สุด เกณฑ์การประเมินความพึงพอใจ
+                            มี 5 ระดับ ดังนี้ <br>5 หมายถึง มากที่สุด, 4 หมายถึงมาก, 3 หมายถึงปานกลาง, 2 หมายถึง น้อย, 1 หมายถึง น้อยที่สุด
+                        </p>
+                        <hr>
+
+                        <?php if (empty($questions)): ?>
+                            <div class="alert alert-warning">ไม่พบข้อคำถามในระบบ</div>
+                        <?php else: ?>
+                            <?php foreach ($questions as $question) : ?>
+                                <div class="card mb-3">
+                                    <div class="card-body p-4">
+                                        <div class="mb-3">
+                                            <label class="form-label-question" for="rating_<?php echo $question['id']; ?>">
+                                                <?php echo htmlspecialchars($question['question_text']); ?>
+                                            </label>
+                                        </div>
+
+                                        <div class="d-flex justify-content-center flex-wrap">
+                                            <?php for ($i = 5; $i >= 1; $i--) : ?>
+                                                <div class="form-check form-check-inline mx-2">
+                                                    <input
+                                                        class="form-check-input"
+                                                        type="radio"
+                                                        name="ratings[<?php echo $question['id']; ?>]"
+                                                        id="q<?php echo $question['id']; ?>-<?php echo $i; ?>"
+                                                        value="<?php echo $i; ?>"
+                                                        required
+                                                        <?php echo ($i == 5) ? 'checked' : ''; // ให้คะแนน 5 เป็นค่าเริ่มต้น 
+                                                        ?> />
+                                                    <label class="form-check-label" for="q<?php echo $question['id']; ?>-<?php echo $i; ?>"><?php echo $i; ?></label>
+                                                </div>
+                                            <?php endfor; ?>
+                                        </div>
                                     </div>
                                 </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+
+                        <!-- ส่วนสำหรับ "ข้อเสนอแนะเพิ่มเติม" -->
+                        <div class="card mt-4 border-primary">
+                            <div class="card-header bg-primary text-white fw-bold">
+                                <i class="fas fa-lightbulb"></i> ข้อเสนอแนะเพิ่มเติมเพื่อการพัฒนาระบบ
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-
-                    <!-- ส่วนสำหรับ "ข้อเสนอแนะเพิ่มเติม" -->
-                    <div class="card mt-4 border-primary">
-                        <div class="card-header bg-primary text-white fw-bold">
-                            <i class="fas fa-lightbulb"></i> ข้อเสนอแนะเพิ่มเติมเพื่อการพัฒนาระบบ
+                            <div class="card-body">
+                                <textarea
+                                    class="form-control"
+                                    id="overall_suggestion"
+                                    name="overall_suggestion"
+                                    rows="4"
+                                    placeholder="กรอกข้อเสนอแนะของคุณที่นี่..."></textarea>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <textarea
-                                class="form-control"
-                                id="overall_suggestion"
-                                name="overall_suggestion"
-                                rows="4"
-                                placeholder="กรอกข้อเสนอแนะของคุณที่นี่..."></textarea>
+
+                        <!-- ปุ่มบันทึกข้อมูล -->
+                        <div class="d-flex justify-content-center my-4">
+                            <button type="submit" class="btn btn-success fs-5 px-4 py-2" <?php echo empty($questions) ? 'disabled' : ''; ?>>
+                                <i class="fas fa-save"></i> บันทึกผลการประเมิน
+                            </button>
                         </div>
-                    </div>
+                    </form>
+                <?php endif; ?>
 
-                    <!-- ปุ่มบันทึกข้อมูล -->
-                    <div class="d-flex justify-content-center my-4">
-                        <button type="submit" class="btn btn-success fs-5 px-4 py-2" <?php echo empty($questions) ? 'disabled' : ''; ?>>
-                            <i class="fas fa-save"></i> บันทึกผลการประเมิน
-                        </button>
-                    </div>
-                </form>
-            <?php endif; ?>
-
-        </div>
-        <div class="card-footer text-center">
-             <a href="../session_details.php?teacher_pid=<?php echo urlencode($t_pid); ?>" class="btn btn-secondary"><i class="fas fa-chevron-left"></i> กลับไปหน้ารายละเอียดประวัติ</a>
+            </div>
+            <!-- <div class="card-footer text-center">
+                <a href="../session_details.php?teacher_pid=<?php echo urlencode($t_pid); ?>" class="btn btn-secondary"><i class="fas fa-chevron-left"></i> กลับไปหน้ารายละเอียดประวัติ</a>
+            </div> -->
         </div>
     </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
