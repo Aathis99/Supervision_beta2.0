@@ -94,7 +94,7 @@ $conn->close();
                         </div>
 
                         <div class="mb-4">
-                            <label for="observation_notes" class="form-label">บันทึกผลการสังเกต/ข้อเสนอแนะ:</label>
+                            <label for="observation_notes" class="form-label">อื่นๆ :</label>
                             <textarea class="form-control" id="observation_notes" name="observation_notes" rows="5" required></textarea>
                         </div>
 
