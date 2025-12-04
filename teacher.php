@@ -1,4 +1,4 @@
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+ <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 
 <hr>
@@ -13,10 +13,10 @@
             <div style="position: relative;">
                 <div class="input-group">
                     <input id="teacher_name_input" name="teacher_name"
-                        class="form-control"
-                        value="<?php echo htmlspecialchars($inspection_data['teacher_name'] ?? ''); ?>"
-                        placeholder="-- พิมพ์ชื่อ-สกุล แล้วกดค้นหา --"
-                        autocomplete="off"><!-- ✨ ปิด autocomplete ของเบราว์เซอร์ -->
+                           class="form-control"
+                           value="<?php echo htmlspecialchars($inspection_data['teacher_name'] ?? ''); ?>"
+                           placeholder="-- พิมพ์ชื่อ-สกุล แล้วกดค้นหา --"
+                           autocomplete="off">
 
                     <button class="btn btn-primary" type="button" id="search_teacher_button">
                         <i class="fas fa-search"></i> ค้นหา
@@ -88,8 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultBox   = document.getElementById('teacher_results');
     const searchBtn   = document.getElementById('search_teacher_button');
 
-    // ปุ่มค้นหา
-    searchBtn.addEventListener('click', () => {
+    // ฟังก์ชันค้นหารายชื่อครู ใช้ได้ทั้งคลิกปุ่มและกด Enter
+    function runTeacherSearch() {
         const searchTerm = teacherInput.value.trim().toLowerCase();
 
         if (!searchTerm) {
@@ -129,7 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         resultBox.style.display = "block";
-    });
+    }
+
+    // คลิกปุ่มค้นหา
+    searchBtn.addEventListener('click', runTeacherSearch);
 
     // เคลียร์ข้อมูลเมื่อพิมพ์ใหม่
     teacherInput.addEventListener("input", () => {
@@ -137,9 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
         resultBox.style.display = "none"; 
     });
 
-    // ป้องกัน Enter ส่งฟอร์ม
+    // กด Enter ในช่องชื่อครู -> ไม่ให้ submit ฟอร์ม แต่ให้ค้นหาแทน
     teacherInput.addEventListener("keydown", e => {
-        if (e.key === "Enter") e.preventDefault();
+        if (e.key === "Enter") {
+            e.preventDefault();
+            runTeacherSearch();
+        }
     });
 });
 
@@ -179,10 +185,10 @@ function fetchTeacherData(pid) {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                document.getElementById('t_pid').value = data.data.t_pid;
-                document.getElementById('adm_name').value = data.data.adm_name;
-                document.getElementById('learning_group').value = data.data.learning_group;
-                document.getElementById('school_name').value = data.data.school_name;
+                document.getElementById('t_pid').value           = data.data.t_pid;
+                document.getElementById('adm_name').value        = data.data.adm_name;
+                document.getElementById('learning_group').value  = data.data.learning_group;
+                document.getElementById('school_name').value     = data.data.school_name;
             }
         })
         .catch(err => console.error("Teacher fetch error:", err));

@@ -8,58 +8,49 @@ require_once '../config/db_connect.php';
 // 2. ตรวจสอบว่าข้อมูลถูกส่งมาแบบ POST หรือไม่
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    // 3. รับข้อมูลจากฟอร์มและป้องกัน XSS
-    // สังเกต: ชื่อตัวแปรจากฟอร์มคือ supervisor_pid, teacher_pid, option_id, observation_notes
-    $p_id = $_POST['supervisor_pid'] ?? '';
-    $t_id = $_POST['teacher_pid'] ?? '';
-    $options = $_POST['option_id'] ?? '';
-    $option_other = $_POST['observation_notes'] ?? '';
+    // 3. รับข้อมูลจากฟอร์ม
+    $p_id         = trim($_POST['supervisor_pid']     ?? '');
+    $t_id         = trim($_POST['teacher_pid']        ?? '');
+    $options      = $_POST['option_id']               ?? '';
+    $option_other = trim($_POST['observation_notes']  ?? ''); // ✅ กรอกหรือไม่ก็ได้
 
-    // ตรวจสอบว่ามีค่าที่จำเป็นครบถ้วนหรือไม่
-    // ⭐️ ปรับปรุงการตรวจสอบ: ใช้ isset และเช็คค่าว่าง ('') เพื่อให้รองรับการกรอก "0" หรือค่าอื่นๆ ที่ empty() มองว่าเป็นค่าว่าง
-    if (!isset($_POST['supervisor_pid']) || $_POST['supervisor_pid'] === '' ||
-        !isset($_POST['teacher_pid']) || $_POST['teacher_pid'] === '' ||
-        !isset($_POST['option_id']) || $_POST['option_id'] === '' ||
-        !isset($_POST['observation_notes']) || $_POST['observation_notes'] === '') {
-        die("เกิดข้อผิดพลาด: ข้อมูลที่จำเป็นไม่ครบถ้วน (p_id, t_id, option, notes)");
+    // 4. ตรวจสอบว่ามีค่าที่จำเป็นครบถ้วนหรือไม่ (ไม่เช็ค observation_notes แล้ว)
+    if ($p_id === '' || $t_id === '' || $options === '') {
+        die("เกิดข้อผิดพลาด: ข้อมูลที่จำเป็นไม่ครบถ้วน (p_id, t_id, option)");
     }
 
+    // แปลง option เป็น int (เผื่อใน DB เป็น INT)
+    $options_int = (int)$options;
+
     try {
-        // ⭐️ ตั้งค่าโซนเวลาและสร้างวันที่ปัจจุบัน
+        // ตั้งค่าโซนเวลาและสร้างวันที่ปัจจุบัน
         date_default_timezone_set('Asia/Bangkok');
         $supervision_date = date('Y-m-d H:i:s');
 
-        // 4. เตรียมคำสั่ง SQL เพื่อบันทึกข้อมูล (ใช้ Prepared Statement)
-        // ⭐️ เพิ่มคอลัมน์ supervision_date เข้าไปในคำสั่ง SQL
-        // ไม่ต้องใส่ id เพราะเป็น auto-increment
-        $sql = "INSERT INTO quick_win (p_id, t_id, options, option_other, supervision_date) VALUES (?, ?, ?, ?, ?)";
+        // 5. เตรียมคำสั่ง SQL เพื่อบันทึกข้อมูล
+        $sql = "INSERT INTO quick_win (p_id, t_id, options, option_other, supervision_date)
+                VALUES (?, ?, ?, ?, ?)";
         
         $stmt = $conn->prepare($sql);
 
-        // ตรวจสอบว่า prepare statement สำเร็จหรือไม่
         if ($stmt === false) {
             throw new Exception("Prepare statement failed: " . $conn->error);
         }
 
-        // 5. Bind Parameters
-        // ⭐️ เพิ่มประเภทข้อมูล 's' สำหรับ supervision_date
-        // ssis: string, string, integer, string
-        $stmt->bind_param("ssiss", $p_id, $t_id, $options, $option_other, $supervision_date);
+        // ssiss : p_id(string), t_id(string), options(int), option_other(string), supervision_date(string)
+        $stmt->bind_param("ssiss", $p_id, $t_id, $options_int, $option_other, $supervision_date);
 
-        // 6. Execute คำสั่ง
         if ($stmt->execute()) {
             // ล้างข้อมูล session ที่ไม่ต้องการแล้ว
             unset($_SESSION['inspection_data']);
 
             // บันทึกสำเร็จ: ส่งผู้ใช้ไปยังหน้า history
-            header('Location: ../history.php'); // ⭐️ เปลี่ยนเส้นทางไปที่นี่
-            exit(); // จบการทำงานของสคริปต์ทันทีหลังจากการ redirect
+            header('Location: ../history.php');
+            exit();
         } else {
-            // บันทึกไม่สำเร็จ
             throw new Exception("Execute failed: " . $stmt->error);
         }
 
-        // ปิด statement
         $stmt->close();
 
     } catch (Exception $e) {
