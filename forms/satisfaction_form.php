@@ -5,40 +5,137 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require_once '../config/db_connect.php';
 
-// 1. รับค่า Composite Key จาก URL
-$s_pid = $_GET['s_pid'] ?? null;
-$t_pid = $_GET['t_pid'] ?? null;
-$sub_code = $_GET['sub_code'] ?? null;
-$time = $_GET['time'] ?? null;
+// --------------------------------------------------------
+// 1. ตรวจสอบโหมดและรับค่าจาก POST หรือ GET
+// --------------------------------------------------------
+$is_post      = $_SERVER['REQUEST_METHOD'] === 'POST';
+$mode         = ($is_post ? $_POST['mode'] : $_GET['mode']) ?? 'normal';
+$session_info = null;
+$t_pid        = null;   // ใช้สำหรับลิงก์กลับ session_details
+$status       = 0;      // 0 = ยังไม่ประเมิน, 1 = ประเมินแล้ว
 
-if (!$s_pid || !$t_pid || !$sub_code || !$time) {
-    die('<div class="alert alert-danger mt-5 text-center">ข้อมูลที่จำเป็นสำหรับการประเมินไม่ครบถ้วน</div>');
+// คีย์ของแต่ละโหมด
+$normal_keys   = [];
+$quickwin_keys = [];
+
+// --------------------------------------------------------
+// 2. โหมดนิเทศปกติ (normal)
+// --------------------------------------------------------
+if ($mode === 'normal') {
+
+    // รับ Composite Key จาก POST หรือ GET
+    $s_pid    = ($is_post ? $_POST['s_pid']    : $_GET['s_pid'])    ?? null;
+    $t_pid    = ($is_post ? $_POST['t_pid']    : $_GET['t_pid'])    ?? null;
+    $sub_code = ($is_post ? $_POST['sub_code'] : $_GET['sub_code']) ?? null;
+    $time     = ($is_post ? $_POST['time']     : $_GET['time'])     ?? null;
+
+    if (!$s_pid || !$t_pid || !$sub_code || !$time) {
+        die('<div class="alert alert-danger mt-5 text-center">ข้อมูลที่จำเป็นสำหรับการประเมินไม่ครบถ้วน (normal)</div>');
+    }
+
+    // ดึงข้อมูลการนิเทศ และสถานะการประเมิน
+    $sql_session = "SELECT 
+                        ss.supervision_date,
+                        ss.subject_name,
+                        CONCAT(sp.PrefixName, sp.fname, ' ', sp.lname) AS supervisor_full_name,
+                        CONCAT(t.PrefixName, t.fname, ' ', t.lname) AS teacher_full_name,
+                        (CASE WHEN EXISTS (
+                            SELECT 1 FROM satisfaction_answers sa 
+                            WHERE sa.supervisor_p_id = ss.supervisor_p_id 
+                              AND sa.teacher_t_pid   = ss.teacher_t_pid 
+                              AND sa.subject_code    = ss.subject_code 
+                              AND sa.inspection_time = ss.inspection_time
+                        ) THEN 1 ELSE 0 END) AS status
+                    FROM supervision_sessions ss
+                    JOIN supervisor sp ON ss.supervisor_p_id = sp.p_id
+                    JOIN teacher    t  ON ss.teacher_t_pid   = t.t_pid
+                    WHERE ss.supervisor_p_id = ? 
+                      AND ss.teacher_t_pid   = ? 
+                      AND ss.subject_code    = ? 
+                      AND ss.inspection_time = ?";
+
+    $stmt_session = $conn->prepare($sql_session);
+    $stmt_session->bind_param("sssi", $s_pid, $t_pid, $sub_code, $time);
+    $stmt_session->execute();
+    $result_session = $stmt_session->get_result();
+    $session_info   = $result_session->fetch_assoc();
+    $stmt_session->close();
+
+    if (!$session_info) {
+        die('<div class="alert alert-danger mt-5 text-center">ไม่พบข้อมูลการนิเทศที่ต้องการประเมิน</div>');
+    }
+
+    $status = (int)$session_info['status'];
+
+    $normal_keys = [
+        's_pid'    => $s_pid,
+        't_pid'    => $t_pid,
+        'sub_code' => $sub_code,
+        'time'     => $time,
+    ];
+
+// --------------------------------------------------------
+// 3. โหมด Quick Win (จุดเน้น)
+// --------------------------------------------------------
+} elseif ($mode === 'quickwin') {
+
+    // ใช้คีย์: t_id + p_id + supervision_date
+    $t_id = ($is_post ? $_POST['t_id'] : $_GET['t_id']) ?? null;
+    $p_id = ($is_post ? $_POST['p_id'] : $_GET['p_id']) ?? null;
+    $date = ($is_post ? $_POST['date'] : $_GET['date']) ?? null; // supervision_date
+
+    if (!$t_id || !$p_id || !$date) {
+        die('<div class="alert alert-danger mt-5 text-center">ข้อมูลที่จำเป็นสำหรับการประเมินไม่ครบถ้วน (quickwin)</div>');
+    }
+
+    $t_pid = $t_id; // ใช้เป็น teacher_pid สำหรับลิงก์กลับหน้าประวัติ
+
+    $sql_session = "SELECT 
+                        qw.supervision_date,
+                        COALESCE(qo.OptionText, qw.option_other) AS subject_name,
+                        CONCAT(sp.PrefixName, sp.fname, ' ', sp.lname) AS supervisor_full_name,
+                        CONCAT(t.PrefixName, t.fname, ' ', t.lname) AS teacher_full_name,
+                        (CASE WHEN EXISTS (
+                            SELECT 1 FROM quickwin_satisfaction_answers qsa
+                            WHERE qsa.t_id             = qw.t_id
+                              AND qsa.p_id             = qw.p_id
+                              AND qsa.supervision_date = qw.supervision_date
+                        ) THEN 1 ELSE 0 END) AS status
+                    FROM quick_win qw
+                    LEFT JOIN supervisor      sp ON qw.p_id   = sp.p_id
+                    LEFT JOIN teacher         t  ON qw.t_id   = t.t_pid
+                    LEFT JOIN quickwin_options qo ON qw.options = qo.OptionID
+                    WHERE qw.t_id = ? AND qw.p_id = ? AND qw.supervision_date = ?";
+
+    $stmt_session = $conn->prepare($sql_session);
+    $stmt_session->bind_param("sss", $t_id, $p_id, $date);
+    $stmt_session->execute();
+    $result_session = $stmt_session->get_result();
+    $session_info   = $result_session->fetch_assoc();
+    $stmt_session->close();
+
+    if (!$session_info) {
+        die('<div class="alert alert-danger mt-5 text-center">ไม่พบข้อมูลจุดเน้น (Quick Win) ที่ต้องการประเมิน</div>');
+    }
+
+    $status = (int)$session_info['status'];
+
+    $quickwin_keys = [
+        't_id' => $t_id,
+        'p_id' => $p_id,
+        'date'=> $date,
+    ];
+
+// --------------------------------------------------------
+// 4. mode ผิด
+// --------------------------------------------------------
+} else {
+    die('<div class="alert alert-danger mt-5 text-center">รูปแบบการประเมินไม่ถูกต้อง</div>');
 }
 
-// 2. ดึงข้อมูลการนิเทศเพื่อแสดงผล และตรวจสอบสถานะ
-$sql_session = "SELECT 
-                    ss.supervision_date,
-                    ss.subject_name,
-                    CONCAT(sp.PrefixName, sp.fname, ' ', sp.lname) AS supervisor_full_name,
-                    CONCAT(t.PrefixName, t.fname, ' ', t.lname) AS teacher_full_name,
-                    (CASE WHEN EXISTS (SELECT 1 FROM satisfaction_answers sa WHERE sa.supervisor_p_id = ss.supervisor_p_id AND sa.teacher_t_pid = ss.teacher_t_pid AND sa.subject_code = ss.subject_code AND sa.inspection_time = ss.inspection_time) THEN 1 ELSE 0 END) AS status
-                FROM supervision_sessions ss
-                JOIN supervisor sp ON ss.supervisor_p_id = sp.p_id
-                JOIN teacher t ON ss.teacher_t_pid = t.t_pid
-                WHERE ss.supervisor_p_id = ? AND ss.teacher_t_pid = ? AND ss.subject_code = ? AND ss.inspection_time = ?";
-
-$stmt_session = $conn->prepare($sql_session);
-$stmt_session->bind_param("sssi", $s_pid, $t_pid, $sub_code, $time);
-$stmt_session->execute();
-$result_session = $stmt_session->get_result();
-$session_info = $result_session->fetch_assoc();
-$stmt_session->close();
-
-if (!$session_info) {
-    die('<div class="alert alert-danger mt-5 text-center">ไม่พบข้อมูลการนิเทศที่ต้องการประเมิน</div>');
-}
-
-// 3. ดึงคำถามจากฐานข้อมูล
+// --------------------------------------------------------
+// 5. ดึงคำถามจากฐานข้อมูล (ใช้ร่วม)
+// --------------------------------------------------------
 $sql_questions = "SELECT id, question_text FROM satisfaction_questions ORDER BY display_order ASC";
 $result_questions = $conn->query($sql_questions);
 $questions = [];
@@ -55,7 +152,9 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>แบบประเมินความพึงพอใจ</title>
+    <title>
+        <?php echo ($mode === 'quickwin') ? 'แบบประเมินจุดเน้น (Quick Win)' : 'แบบประเมินความพึงพอใจการนิเทศ'; ?>
+    </title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="../css/styles.css">
@@ -65,47 +164,90 @@ $conn->close();
     <div class="container my-5">
         <div class="card shadow-lg">
             <div class="card-header bg-warning text-dark text-center">
-                <h4 class="mb-0"><i class="fas fa-star"></i> แบบประเมินความพึงพอใจการนิเทศ</h4>
+                <h4 class="mb-0">
+                    <i class="fas fa-star"></i>
+                    <?php echo ($mode === 'quickwin') ? 'แบบประเมินความพึงพอใจจุดเน้น (Quick Win)' : 'แบบประเมินความพึงพอใจการนิเทศ'; ?>
+                </h4>
             </div>
             <div class="card-body p-4">
 
                 <div class="alert alert-info">
                     <div class="row">
-                        <div class="col-md-6"><strong>ผู้รับการนิเทศ:</strong> <?php echo htmlspecialchars($session_info['teacher_full_name']); ?></div>
-                        <div class="col-md-6"><strong>ผู้นิเทศ:</strong> <?php echo htmlspecialchars($session_info['supervisor_full_name']); ?></div>
-                        <div class="col-md-6"><strong>วิชา/หัวข้อ:</strong> <?php echo htmlspecialchars($session_info['subject_name']); ?></div>
-                        <div class="col-md-6"><strong>วันที่นิเทศ:</strong> <?php echo (new DateTime($session_info['supervision_date']))->format('d/m/Y'); ?></div>
+                        <div class="col-md-6">
+                            <strong>ผู้รับการนิเทศ:</strong>
+                            <?php echo htmlspecialchars($session_info['teacher_full_name']); ?>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>ผู้นิเทศ:</strong>
+                            <?php echo htmlspecialchars($session_info['supervisor_full_name']); ?>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>วิชา/หัวข้อ:</strong>
+                            <?php echo htmlspecialchars($session_info['subject_name']); ?>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>วันที่นิเทศ:</strong>
+                            <?php echo (new DateTime($session_info['supervision_date']))->format('d/m/Y'); ?>
+                        </div>
                     </div>
                 </div>
 
-                <?php if ($session_info['status'] == 1): ?>
+                <?php if ($status === 1): ?>
+                    <!-- ✅ กรณีประเมินแล้ว -->
                     <div class="alert alert-success text-center">
-                        <h5 class="alert-heading"><i class="fas fa-check-circle"></i> ท่านได้ทำการประเมินเรียบร้อยแล้ว</h5>
+                        <h5 class="alert-heading">
+                            <i class="fas fa-check-circle"></i>
+                            ท่านได้ทำการประเมินเรียบร้อยแล้ว
+                        </h5>
                         <p>ขอขอบคุณสำหรับความคิดเห็นของท่าน</p>
 
                         <div class="d-flex justify-content-center gap-2 mt-3">
-                            <a href="../session_details.php?teacher_pid=<?php echo urlencode($t_pid); ?>" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> กลับไปหน้าประวัติ
-                            </a>
+                            <form method="POST" action="../session_details.php" style="display:inline;">
+                                <input type="hidden" name="teacher_pid" value="<?php echo htmlspecialchars($t_pid); ?>">
+                                <button type="submit" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> กลับไปหน้าประวัติ
+                                </button>
+                            </form>
 
-                            <a href="../certificate.php?s_pid=<?php echo htmlspecialchars($s_pid); ?>&t_pid=<?php echo htmlspecialchars($t_pid); ?>&sub_code=<?php echo htmlspecialchars($sub_code); ?>&time=<?php echo htmlspecialchars($time); ?>"
-                                target="_blank"
-                                class="btn btn-success">
-                                <i class="fas fa-print"></i> พิมพ์เกียรติบัตร
-                            </a>
+                            <?php if ($mode === 'normal'): ?>
+                                <!-- เกียรติบัตรนิเทศปกติ -->
+                                <form method="POST" action="../certificate.php" target="_blank" style="display:inline;">
+                                    <?php foreach ($normal_keys as $key => $value): ?>
+                                        <input type="hidden" name="<?php echo htmlspecialchars($key); ?>" value="<?php echo htmlspecialchars($value); ?>">
+                                    <?php endforeach; ?>
+                                    <button type="submit" class="btn btn-success"><i class="fas fa-print"></i> พิมพ์เกียรติบัตร</button>
+                                </form>
+                            <?php endif; ?>
+                            <!-- ถ้าทำ certificate_qw.php แล้ว ค่อยเพิ่มปุ่มสำหรับ quickwin ที่นี่ -->
                         </div>
                     </div>
                 <?php else: ?>
-                    <!-- แบบฟอร์มหลัก -->
+                    <!-- ✅ ยังไม่ประเมิน แสดงฟอร์ม -->
                     <form id="satisfactionForm" method="POST" action="save_satisfaction.php">
-                        <!-- ส่ง Composite Key ไปกับฟอร์ม -->
-                        <input type="hidden" name="s_pid" value="<?php echo htmlspecialchars($s_pid); ?>">
-                        <input type="hidden" name="t_pid" value="<?php echo htmlspecialchars($t_pid); ?>">
-                        <input type="hidden" name="sub_code" value="<?php echo htmlspecialchars($sub_code); ?>">
-                        <input type="hidden" name="time" value="<?php echo htmlspecialchars($time); ?>">
+                        <!-- โหมด -->
+                        <input type="hidden" name="mode" value="<?php echo htmlspecialchars($mode); ?>">
 
-                        <p class="mb-2"><strong>คำชี้แจง :</strong> โปรดเลือกระดับความพึงพอใจที่ตรงกับความพึงพอใจของท่านมากที่สุด เกณฑ์การประเมินความพึงพอใจ
-                            มี 5 ระดับ ดังนี้ <br>5 หมายถึง มากที่สุด, 4 หมายถึงมาก, 3 หมายถึงปานกลาง, 2 หมายถึง น้อย, 1 หมายถึง น้อยที่สุด
+                        <?php if ($mode === 'normal'): ?>
+                            <!-- คีย์ของนิเทศปกติ -->
+                            <input type="hidden" name="s_pid"    value="<?php echo htmlspecialchars($normal_keys['s_pid']); ?>">
+                            <input type="hidden" name="t_pid"    value="<?php echo htmlspecialchars($normal_keys['t_pid']); ?>">
+                            <input type="hidden" name="sub_code" value="<?php echo htmlspecialchars($normal_keys['sub_code']); ?>">
+                            <input type="hidden" name="time"     value="<?php echo htmlspecialchars($normal_keys['time']); ?>">
+                        <?php else: ?>
+                            <!-- คีย์ของ Quick Win -->
+                            <input type="hidden" name="t_id"            value="<?php echo htmlspecialchars($quickwin_keys['t_id']); ?>">
+                            <input type="hidden" name="p_id"            value="<?php echo htmlspecialchars($quickwin_keys['p_id']); ?>">
+                            <input type="hidden" name="supervision_date" value="<?php echo htmlspecialchars($quickwin_keys['date']); ?>">
+                            <!-- t_pid สำหรับลิงก์กลับ ไม่ต้องส่งก็ได้ แต่เผื่ออยากใช้ -->
+                            <input type="hidden" name="t_pid" value="<?php echo htmlspecialchars($t_pid); ?>">
+                        <?php endif; ?>
+
+                        <p class="mb-2">
+                            <strong>คำชี้แจง :</strong>
+                            โปรดเลือกระดับความพึงพอใจที่ตรงกับความพึงพอใจของท่านมากที่สุด
+                            เกณฑ์การประเมินความพึงพอใจมี 5 ระดับ ดังนี้<br>
+                            5 หมายถึง มากที่สุด, 4 หมายถึง มาก, 3 หมายถึง ปานกลาง,
+                            2 หมายถึง น้อย, 1 หมายถึง น้อยที่สุด
                         </p>
                         <hr>
 
@@ -116,7 +258,8 @@ $conn->close();
                                 <div class="card mb-3">
                                     <div class="card-body p-4">
                                         <div class="mb-3">
-                                            <label class="form-label-question" for="rating_<?php echo $question['id']; ?>">
+                                            <label class="form-label-question"
+                                                   for="rating_<?php echo $question['id']; ?>">
                                                 <?php echo htmlspecialchars($question['question_text']); ?>
                                             </label>
                                         </div>
@@ -131,9 +274,11 @@ $conn->close();
                                                         id="q<?php echo $question['id']; ?>-<?php echo $i; ?>"
                                                         value="<?php echo $i; ?>"
                                                         required
-                                                        <?php echo ($i == 5) ? 'checked' : ''; // ให้คะแนน 5 เป็นค่าเริ่มต้น 
-                                                        ?> />
-                                                    <label class="form-check-label" for="q<?php echo $question['id']; ?>-<?php echo $i; ?>"><?php echo $i; ?></label>
+                                                        <?php echo ($i == 5) ? 'checked' : ''; ?> />
+                                                    <label class="form-check-label"
+                                                           for="q<?php echo $question['id']; ?>-<?php echo $i; ?>">
+                                                           <?php echo $i; ?>
+                                                    </label>
                                                 </div>
                                             <?php endfor; ?>
                                         </div>
@@ -142,10 +287,10 @@ $conn->close();
                             <?php endforeach; ?>
                         <?php endif; ?>
 
-                        <!-- ส่วนสำหรับ "ข้อเสนอแนะเพิ่มเติม" -->
+                        <!-- ข้อเสนอแนะเพิ่มเติม -->
                         <div class="card mt-4 border-primary">
                             <div class="card-header bg-primary text-white fw-bold">
-                                <i class="fas fa-lightbulb"></i> ข้อเสนอแนะเพิ่มเติมเพื่อการพัฒนาระบบ
+                                <i class="fas fa-lightbulb"></i> ข้อเสนอแนะเพิ่มเติมเพื่อการพัฒนา
                             </div>
                             <div class="card-body">
                                 <textarea
@@ -157,9 +302,11 @@ $conn->close();
                             </div>
                         </div>
 
-                        <!-- ปุ่มบันทึกข้อมูล -->
+                        <!-- ปุ่มบันทึก -->
                         <div class="d-flex justify-content-center my-4">
-                            <button type="submit" class="btn btn-success fs-5 px-4 py-2" <?php echo empty($questions) ? 'disabled' : ''; ?>>
+                            <button type="submit"
+                                    class="btn btn-success fs-5 px-4 py-2"
+                                    <?php echo empty($questions) ? 'disabled' : ''; ?>>
                                 <i class="fas fa-save"></i> บันทึกผลการประเมิน
                             </button>
                         </div>
@@ -167,12 +314,8 @@ $conn->close();
                 <?php endif; ?>
 
             </div>
-            <!-- <div class="card-footer text-center">
-                <a href="../session_details.php?teacher_pid=<?php echo urlencode($t_pid); ?>" class="btn btn-secondary"><i class="fas fa-chevron-left"></i> กลับไปหน้ารายละเอียดประวัติ</a>
-            </div> -->
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

@@ -243,7 +243,7 @@ $js_background_colors = json_encode($background_colors);
             </div>
         </div>
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <a href="javascript:history.back()" class="btn btn-danger">
+            <a href="../index.php" class="btn btn-danger">
                 <i class="fas fa-arrow-left"></i> กลับ
             </a>
             <h1 class="text-center mb-0 flex-grow-1">Dashboard สรุปผลการนิเทศ</h1>

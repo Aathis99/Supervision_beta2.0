@@ -67,7 +67,6 @@ $conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -76,33 +75,33 @@ $conn->close();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        .data-view {
-            display: inline;
+        .data-view { display: inline; }
+        .data-edit { display: none; }
+        .edit-mode .data-view { display: none; }
+        .edit-mode .data-edit { display: block; }
+
+        /* ปรับให้ช่องคำนำหน้า-ชื่อ-นามสกุลอยู่ในแถวเดียวกัน */
+        .name-edit-row {
+            display: flex;
+            gap: 0.25rem; /* ระยะห่างระหว่างช่อง */
+        }
+        .name-edit-row input[name="PrefixName"] {
+            max-width: 90px;
+        }
+        .name-edit-row input[name="fname"] {
+            max-width: 160px;
+        }
+        .name-edit-row input[name="lname"] {
+            max-width: 200px;
         }
 
-        .data-edit {
-            display: none;
-        }
-
-        .edit-mode .data-view {
-            display: none;
-        }
-
-        .edit-mode .data-edit {
-            display: block;
-        }
-
-        /* ✅ ให้คอลัมน์ชื่อ-สกุล แสดงชื่ออย่างเดียวในโหมดแก้ไข (ซ่อน input 3 ช่อง) */
-        .edit-mode td[data-field="name"] .data-view {
-            display: inline;
-        }
-
-        .edit-mode td[data-field="name"] .data-edit {
-            display: none !important;
+        .old-name-text {
+            font-size: 0.8rem;
+            color: #6c757d; /* text-muted */
+            margin-bottom: 0.25rem;
         }
     </style>
 </head>
-
 <body>
     <div class="container mt-5">
         <div class="card shadow-lg p-4">
@@ -113,9 +112,9 @@ $conn->close();
             <form method="GET" action="edit_teacher_list.php" class="mb-4">
                 <div class="input-group">
                     <input type="text" class="form-control"
-                        placeholder="ค้นหาด้วยชื่อ, ตำแหน่ง หรือโรงเรียน..."
-                        name="search_name"
-                        value="<?php echo htmlspecialchars($search_name); ?>">
+                           placeholder="ค้นหาด้วยชื่อ, ตำแหน่ง หรือโรงเรียน..."
+                           name="search_name"
+                           value="<?php echo htmlspecialchars($search_name); ?>">
                     <button class="btn btn-primary" type="submit">
                         <i class="fas fa-search"></i> ค้นหา
                     </button>
@@ -126,9 +125,9 @@ $conn->close();
             </form>
 
             <div class="d-flex justify-content-end mb-3">
-                <a href="index.php" class="btn btn-danger">
+                 <a href="index.php" class="btn btn-danger">
                     <i class="fas fa-arrow-left"></i> กลับหน้าหลัก
-                </a>
+                 </a>
             </div>
 
             <div class="table-responsive">
@@ -160,28 +159,37 @@ $conn->close();
                                     'ครูเชี่ยวชาญพิเศษ'
                                 ];
                                 $current_pos = $row['adm_name'] ?? '';
+                                $full_name   = $row['PrefixName'] . $row['fname'] . ' ' . $row['lname'];
                                 ?>
                                 <tr id="row-<?php echo $row['t_pid']; ?>">
                                     <!-- ชื่อ-สกุล -->
                                     <td data-field="name">
+                                        <!-- โหมดแสดงผลปกติ -->
                                         <span class="data-view">
-                                            <?php echo htmlspecialchars($row['PrefixName'] . $row['fname'] . ' ' . $row['lname']); ?>
+                                            <?php echo htmlspecialchars($full_name); ?>
                                         </span>
 
-                                        <!-- input เก็บค่าชื่อไว้สำหรับส่งไปอัปเดต แต่ถูกซ่อนตอน edit -->
-                                        <div class="data-edit input-group mt-1">
-                                            <input type="text" class="form-control form-control-sm"
-                                                name="PrefixName"
-                                                value="<?php echo htmlspecialchars($row['PrefixName']); ?>"
-                                                placeholder="คำนำหน้า">
-                                            <input type="text" class="form-control form-control-sm"
-                                                name="fname"
-                                                value="<?php echo htmlspecialchars($row['fname']); ?>"
-                                                placeholder="ชื่อ">
-                                            <input type="text" class="form-control form-control-sm"
-                                                name="lname"
-                                                value="<?php echo htmlspecialchars($row['lname']); ?>"
-                                                placeholder="นามสกุล">
+                                        <!-- โหมดแก้ไข -->
+                                        <div class="data-edit mt-1">
+                                            <!-- แสดงชื่อเดิมให้ดู -->
+                                            <div class="old-name-text">
+                                                ชื่อเดิม: <?php echo htmlspecialchars($full_name); ?>
+                                            </div>
+                                            <!-- ช่องแก้ไขเรียงเป็นแถวเดียว -->
+                                            <div class="name-edit-row">
+                                                <input type="text" class="form-control form-control-sm"
+                                                       name="PrefixName"
+                                                       value="<?php echo htmlspecialchars($row['PrefixName']); ?>"
+                                                       placeholder="คำนำหน้า">
+                                                <input type="text" class="form-control form-control-sm"
+                                                       name="fname"
+                                                       value="<?php echo htmlspecialchars($row['fname']); ?>"
+                                                       placeholder="ชื่อ" required>
+                                                <input type="text" class="form-control form-control-sm"
+                                                       name="lname"
+                                                       value="<?php echo htmlspecialchars($row['lname']); ?>"
+                                                       placeholder="นามสกุล" required>
+                                            </div>
                                         </div>
                                     </td>
 
@@ -208,7 +216,7 @@ $conn->close();
                                         <select class="form-select form-select-sm data-edit" name="school_id">
                                             <?php foreach ($schools as $school): ?>
                                                 <option value="<?php echo $school['school_id']; ?>"
-                                                    <?php echo ($school['school_id'] == $row['school_id']) ? 'selected' : ''; ?>>
+                                                        <?php echo ($school['school_id'] == $row['school_id']) ? 'selected' : ''; ?>>
                                                     <?php echo htmlspecialchars($school['SchoolName']); ?>
                                                 </option>
                                             <?php endforeach; ?>
@@ -219,17 +227,17 @@ $conn->close();
                                     <td class="text-center" data-field="actions">
                                         <div class="action-view">
                                             <button class="btn btn-sm btn-warning btn-edit"
-                                                data-pid="<?php echo $row['t_pid']; ?>">
+                                                    data-pid="<?php echo $row['t_pid']; ?>">
                                                 <i class="fas fa-edit"></i> แก้ไข
                                             </button>
                                         </div>
                                         <div class="action-edit" style="display:none;">
                                             <button class="btn btn-sm btn-success btn-save"
-                                                data-pid="<?php echo $row['t_pid']; ?>">
+                                                    data-pid="<?php echo $row['t_pid']; ?>">
                                                 <i class="fas fa-save"></i> บันทึก
                                             </button>
-                                            <button class="btn btn-sm btn-danger btn-cancel"
-                                                data-pid="<?php echo $row['t_pid']; ?>">
+                                            <button class="btn btn-sm btn-secondary btn-cancel"
+                                                    data-pid="<?php echo $row['t_pid']; ?>">
                                                 <i class="fas fa-times"></i> ยกเลิก
                                             </button>
                                         </div>
@@ -243,86 +251,90 @@ $conn->close();
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // เข้าโหมดแก้ไข
-            document.querySelectorAll('.btn-edit').forEach(button => {
-                button.addEventListener('click', function() {
-                    const pid = this.dataset.pid;
-                    const row = document.getElementById('row-' + pid);
-                    row.classList.add('edit-mode');
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // เข้าโหมดแก้ไข
+    document.querySelectorAll('.btn-edit').forEach(button => {
+        button.addEventListener('click', function() {
+            const pid = this.dataset.pid;
+            const row = document.getElementById('row-' + pid);
+            row.classList.add('edit-mode');
+            
+            row.querySelector('.action-view').style.display = 'none';
+            row.querySelector('.action-edit').style.display = 'block';
+        });
+    });
 
-                    row.querySelector('.action-view').style.display = 'none';
-                    row.querySelector('.action-edit').style.display = 'block';
-                });
-            });
+    // ยกเลิกการแก้ไข
+    document.querySelectorAll('.btn-cancel').forEach(button => {
+        button.addEventListener('click', function() {
+            const pid = this.dataset.pid;
+            const row = document.getElementById('row-' + pid);
+            row.classList.remove('edit-mode');
 
-            // ยกเลิกการแก้ไข
-            document.querySelectorAll('.btn-cancel').forEach(button => {
-                button.addEventListener('click', function() {
-                    const pid = this.dataset.pid;
-                    const row = document.getElementById('row-' + pid);
+            row.querySelector('.action-view').style.display = 'block';
+            row.querySelector('.action-edit').style.display = 'none';
+            // ถ้าต้องการรีค่าเดิมจาก DB จริง ๆ: location.reload();
+        });
+    });
+
+    // บันทึกข้อมูล
+    document.querySelectorAll('.btn-save').forEach(button => {
+        button.addEventListener('click', function() {
+            const pid = this.dataset.pid;
+            const row = document.getElementById('row-' + pid);
+            
+            const prefixName = row.querySelector('input[name="PrefixName"]').value;
+            const fname      = row.querySelector('input[name="fname"]').value.trim();
+            const lname      = row.querySelector('input[name="lname"]').value.trim();
+            const adm_name   = row.querySelector('select[name="adm_name"]').value;
+            const school_id  = row.querySelector('select[name="school_id"]').value;
+            const school_name = row.querySelector('select[name="school_id"] option:checked').text;
+
+            if (fname === '' || lname === '' || school_id === '') {
+                alert('กรุณากรอกชื่อ นามสกุล และเลือกโรงเรียนให้ครบถ้วน');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('t_pid', pid);
+            formData.append('PrefixName', prefixName);
+            formData.append('fname', fname);
+            formData.append('lname', lname);
+            formData.append('adm_name', adm_name);
+            formData.append('school_id', school_id);
+
+            fetch('api/update_teacher.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // อัปเดตข้อมูลใน view
+                    row.querySelector('[data-field="name"] .data-view').textContent =
+                        (prefixName ?? '') + fname + ' ' + lname;
+                    row.querySelector('[data-field="position"] .data-view').textContent =
+                        adm_name;
+                    row.querySelector('[data-field="school"] .data-view').textContent =
+                        school_name;
+
                     row.classList.remove('edit-mode');
-
                     row.querySelector('.action-view').style.display = 'block';
                     row.querySelector('.action-edit').style.display = 'none';
-                    // ถ้าอยากรีเซ็ตค่า input กลับค่าเดิม ให้ใช้ location.reload();
-                });
-            });
-
-            // บันทึกข้อมูล
-            document.querySelectorAll('.btn-save').forEach(button => {
-                button.addEventListener('click', function() {
-                    const pid = this.dataset.pid;
-                    const row = document.getElementById('row-' + pid);
-
-                    const prefixName = row.querySelector('input[name="PrefixName"]').value;
-                    const fname = row.querySelector('input[name="fname"]').value;
-                    const lname = row.querySelector('input[name="lname"]').value;
-                    const adm_name = row.querySelector('select[name="adm_name"]').value;
-                    const school_id = row.querySelector('select[name="school_id"]').value;
-                    const school_name = row.querySelector('select[name="school_id"] option:checked').text;
-
-                    const formData = new FormData();
-                    formData.append('t_pid', pid);
-                    formData.append('PrefixName', prefixName);
-                    formData.append('fname', fname);
-                    formData.append('lname', lname);
-                    formData.append('adm_name', adm_name);
-                    formData.append('school_id', school_id);
-
-                    fetch('api/update_teacher.php', {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                // อัปเดตข้อมูลใน view
-                                row.querySelector('[data-field="name"] .data-view').textContent =
-                                    prefixName + fname + ' ' + lname;
-                                row.querySelector('[data-field="position"] .data-view').textContent =
-                                    adm_name;
-                                row.querySelector('[data-field="school"] .data-view').textContent =
-                                    school_name;
-
-                                row.classList.remove('edit-mode');
-                                row.querySelector('.action-view').style.display = 'block';
-                                row.querySelector('.action-edit').style.display = 'none';
-                                alert('บันทึกข้อมูลสำเร็จ');
-                            } else {
-                                alert('เกิดข้อผิดพลาด: ' + data.message);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
-                        });
-                });
+                    alert('บันทึกข้อมูลสำเร็จ');
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + (data.message ?? 'ไม่ทราบสาเหตุ'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
             });
         });
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    });
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

@@ -4,7 +4,7 @@ require_once '../config/db_connect.php';
 require_once '../check_login.php'; // ตรวจสอบการล็อกอิน
 
 // ตั้งค่า header เพื่อระบุว่าการตอบกลับเป็น JSON
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
 // สร้าง array สำหรับการตอบกลับ
 $response = ['success' => false, 'message' => ''];
@@ -81,4 +81,3 @@ $stmt->close();
 $conn->close();
 
 echo json_encode($response);
-?>
