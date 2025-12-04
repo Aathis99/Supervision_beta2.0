@@ -285,9 +285,14 @@ $conn->close();
                                                             </button>
                                                         </form>
                                                     <?php else: ?>
-                                                        <button type="button" class="btn btn-sm btn-success" disabled>
-                                                            <i class="fas fa-check-circle"></i> ประเมินแล้ว
-                                                        </button>
+                                                        <form method="POST" action="certificate_quickwin.php" style="display:inline;">
+                                                            <input type="hidden" name="t_id" value="<?php echo htmlspecialchars($row['qw_t_id']); ?>">
+                                                            <input type="hidden" name="p_id" value="<?php echo htmlspecialchars($row['qw_p_id']); ?>">
+                                                            <input type="hidden" name="date" value="<?php echo htmlspecialchars($row['qw_date']); ?>">
+                                                            <button type="submit" class="btn btn-sm btn-success">
+                                                                <i class="fas fa-certificate"></i> เกียรติบัตรจุดเน้น
+                                                            </button>
+                                                        </form>
                                                     <?php endif; ?>
                                                 <?php else: ?>
                                                     <button type="button" class="btn btn-sm btn-secondary" disabled>
