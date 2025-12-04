@@ -231,6 +231,10 @@ $conn->close();
                                                         </a>
                                                     <?php else: ?>
                                                         <form method="POST" action="certificate.php" style="display:inline;" target="_blank">
+                                                            <input type="hidden" name="s_pid" value="<?php echo $row['supervisor_p_id']; ?>">
+                                                            <input type="hidden" name="t_pid" value="<?php echo $row['teacher_t_pid']; ?>">
+                                                            <input type="hidden" name="sub_code" value="<?php echo $row['subject_code']; ?>">
+                                                            <input type="hidden" name="time" value="<?php echo $row['inspection_time']; ?>">
                                                             <button type="submit" class="btn btn-sm btn-success" title="เกียรติบัตร">
                                                                 <i class="fas fa-certificate"></i> เกียรติบัตร
                                                             </button>
@@ -253,7 +257,7 @@ $conn->close();
             </div>
 
             <div class="text-center mt-4">
-                <a href="index.php" class="btn btn-secondary">
+                <a href="index.php" class="btn btn-danger">
                     <i class="fas fa-chevron-left"></i> กลับไปหน้าประวัติรวม
                 </a>
             </div>

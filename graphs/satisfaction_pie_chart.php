@@ -1,20 +1,92 @@
 <?php
-// ไฟล์: satisfaction_pie_chart.php
-// ส่วนแสดงผลของกราฟสรุปผลความพึงพอใจ
+// ไฟล์: graphs/satisfaction_pie_chart.php
+
+require_once '../config/db_connect.php';
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // ---------------------------------------------------------------------------
+    // SQL Query: ดึงข้อมูลคะแนนเฉลี่ยความพึงพอใจรายข้อ
+    // ---------------------------------------------------------------------------
+    $query = "
+        SELECT 
+            sq.question_text AS question_text_with_number,
+            COALESCE(AVG(sa.rating), 0) AS average_score,
+            COUNT(sa.rating) AS response_count
+        FROM 
+            satisfaction_questions sq
+        LEFT JOIN 
+            satisfaction_answers sa ON sq.id = sa.question_id
+        GROUP BY 
+            sq.id, sq.question_text, sq.display_order
+        ORDER BY 
+            sq.display_order ASC
+    ";
+
+    $stmt = $pdo->query($query);
+    $dashboard_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // เตรียมตัวแปรสำหรับกราฟ
+    $labels = [];
+    $values = [];
+
+    foreach ($dashboard_data as $row) {
+        $labels[] = $row['question_text_with_number']; // เช่น "1. ความรู้..."
+        $values[] = number_format($row['average_score'], 2);
+    }
+
+    $chart_labels = json_encode($labels, JSON_UNESCAPED_UNICODE);
+    $chart_values = json_encode($values);
+
+    // กำหนดชุดสีสำหรับกราฟ (ให้มีจำนวนสีเพียงพอกับจำนวนข้อคำถาม)
+    $pool_colors = [
+        '#FF6384',
+        '#36A2EB',
+        '#FFCE56',
+        '#4BC0C0',
+        '#9966FF',
+        '#FF9F40',
+        '#C9CBCF',
+        '#E7E9ED',
+        '#28a745',
+        '#17a2b8',
+        '#6f42c1',
+        '#fd7e14',
+        '#20c997',
+        '#d63384',
+        '#6610f2'
+    ];
+
+    $background_colors = [];
+    $count_data = count($dashboard_data);
+    for ($i = 0; $i < $count_data; $i++) {
+        $background_colors[] = $pool_colors[$i % count($pool_colors)];
+    }
+    $js_background_colors = json_encode($background_colors);
+} catch (PDOException $e) {
+    echo '<div class="alert alert-danger">เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล: ' . $e->getMessage() . '</div>';
+    // กำหนดค่าเริ่มต้นกรณี Error เพื่อไม่ให้กราฟพัง
+    $dashboard_data = [];
+    $chart_labels = '[]';
+    $chart_values = '[]';
+    $js_background_colors = '[]';
+    $background_colors = [];
+}
 ?>
+
 <div class="card shadow-sm">
     <div class="card-header card-header-custom text-center">
         <h2 class="h4 mb-0"><i class="fas fa-chart-pie"></i> สรุปผลความพึงพอใจต่อการนิเทศศึกษา</h2>
     </div>
     <div class="card-body p-4">
         <div class="row align-items-center">
-            <!-- ส่วนของกราฟ (ปรับขนาด) -->
             <div class="col-lg-6">
                 <h5 class="card-title text-center mb-3">คะแนนเฉลี่ยแต่ละประเด็น</h5>
                 <canvas id="satisfactionChart" style="max-height: 400px;"></canvas>
             </div>
 
-            <!-- ส่วนของตารางข้อมูล (ย้ายขึ้นมาข้างกราฟ) -->
             <div class="col-lg-6">
                 <h5 class="card-title text-center mb-3">ตารางสรุปข้อมูลดิบ</h5>
                 <div class="table-responsive">
@@ -40,7 +112,6 @@
             </div>
         </div>
 
-        <!-- ส่วนของคำอธิบายสัญลักษณ์ (Legend) -->
         <div class="row mt-4">
             <div class="col-lg-12 custom-legend">
                 <h5 class="card-title mb-3">ประเด็นการประเมิน</h5>
@@ -50,9 +121,9 @@
                             <div class="legend-item">
                                 <div class="legend-color-box" style="background-color: <?php echo $background_colors[$index % count($background_colors)]; ?>;"></div>
                                 <span>
-                                    <?php 
+                                    <?php
                                     // ลบตัวเลขและจุดนำหน้า (เช่น "1. ") ออกจากข้อความ
-                                    echo htmlspecialchars(preg_replace('/^\d+\.\s*/', '', $data['question_text_with_number'])); 
+                                    echo htmlspecialchars(preg_replace('/^\d+\.\s*/', '', $data['question_text_with_number']));
                                     ?>
                                 </span>
                             </div>
@@ -71,47 +142,52 @@ $js_response_counts = json_encode($response_counts);
 ?>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    // --- กราฟสรุปผลความพึงพอใจ (Pie Chart) ---
-    const ctx = document.getElementById('satisfactionChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: <?php echo $chart_labels; ?>,
-            datasets: [{
-                label: 'คะแนนเฉลี่ย',
-                data: <?php echo $chart_values; ?>,
-                backgroundColor: <?php echo $js_background_colors; ?>,
-                borderColor: <?php echo $js_background_colors; ?>.map(color => color.replace('0.7', '1')),
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { 
-                    display: false 
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- กราฟสรุปผลความพึงพอใจ (Pie Chart) ---
+        const ctx = document.getElementById('satisfactionChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: <?php echo $chart_labels; ?>,
+                datasets: [{
+                    label: 'คะแนนเฉลี่ย',
+                    data: <?php echo $chart_values; ?>,
+                    backgroundColor: <?php echo $js_background_colors; ?>,
+                    borderColor: <?php echo $js_background_colors; ?>.map(color => color.replace('0.7', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += context.formattedValue; // คะแนนเฉลี่ย
+                                return label + ' (ผู้ตอบ: ' + <?php echo $js_response_counts; ?>[context.dataIndex] + ' คน)';
                             }
-                            label += context.formattedValue; // คะแนนเฉลี่ย
-                            return label + ' (ผู้ตอบ: ' + <?php echo $js_response_counts; ?>[context.dataIndex] + ' คน)';
+                        }
+                    },
+                    datalabels: {
+                        // ใช้ formatter เพื่อดึงเฉพาะเลขข้อจาก label (เช่น "1. ความรวดเร็ว" จะได้ "1")
+                        formatter: (value, context) => {
+                            return context.chart.data.labels[context.dataIndex].split('.')[0];
+                        },
+                        color: '#fff',
+                        font: {
+                            weight: 'bold',
+                            size: 14
                         }
                     }
-                },
-                datalabels: {
-                    // ใช้ formatter เพื่อดึงเฉพาะเลขข้อจาก label (เช่น "1. ความรวดเร็ว" จะได้ "1")
-                    formatter: (value, context) => {
-                        return context.chart.data.labels[context.dataIndex].split('.')[0];
-                    },
-                    color: '#fff', font: { weight: 'bold', size: 14 } }
+                }
             }
-        }
+        });
     });
-});
 </script>

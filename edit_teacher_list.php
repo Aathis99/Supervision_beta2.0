@@ -228,7 +228,7 @@ $conn->close();
                                                 data-pid="<?php echo $row['t_pid']; ?>">
                                                 <i class="fas fa-save"></i> บันทึก
                                             </button>
-                                            <button class="btn btn-sm btn-secondary btn-cancel"
+                                            <button class="btn btn-sm btn-danger btn-cancel"
                                                 data-pid="<?php echo $row['t_pid']; ?>">
                                                 <i class="fas fa-times"></i> ยกเลิก
                                             </button>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Dec 03, 2025 at 02:32 PM
+-- Generation Time: Dec 04, 2025 at 08:51 AM
 -- Server version: 8.0.44-0ubuntu0.22.04.1
 -- PHP Version: 7.4.33
 
@@ -425,57 +425,8 @@ INSERT INTO `quick_win` (`id`, `t_id`, `p_id`, `supervision_date`, `options`, `o
 (1, '3900200192635', '1560100030525', '2025-12-01 16:37:56', 1, 'เทสระบบรอบที่ 3'),
 (2, '3510400265249', '3509900553730', '2025-12-01 22:46:30', 6, 'ฟ'),
 (3, '3510400265249', '1529900191467', '2025-12-01 23:12:17', 14, '888'),
-(4, '1510100024525', '1529900270499', '2025-12-03 09:02:05', 3, 'ผู้เรียนสามารถ เข้าถึงสิ่งเรียนและ เข้าใจบทเรียน / กิจกรรม');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `quick_win_all_events`
---
-
-CREATE TABLE `quick_win_all_events` (
-  `quick_win_id` int NOT NULL DEFAULT '0',
-  `supervision_date` datetime NOT NULL,
-  `teacher_id` varchar(13) CHARACTER SET utf8mb3 NOT NULL,
-  `full_name` varchar(301) CHARACTER SET utf8mb3 DEFAULT NULL,
-  `school_id` int DEFAULT NULL,
-  `school_name` varchar(255) CHARACTER SET utf8mb3 NOT NULL DEFAULT '',
-  `school_group_id` int DEFAULT NULL,
-  `position_rank` varchar(100) CHARACTER SET utf8mb3 NOT NULL DEFAULT '',
-  `original_learning_group` varchar(255) CHARACTER SET utf8mb3 DEFAULT NULL,
-  `core_learning_group` varchar(255) CHARACTER SET utf8mb3 DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `quick_win_all_events`
---
-
-INSERT INTO `quick_win_all_events` (`quick_win_id`, `supervision_date`, `teacher_id`, `full_name`, `school_id`, `school_name`, `school_group_id`, `position_rank`, `original_learning_group`, `core_learning_group`) VALUES
-(1, '2025-12-01 16:37:56', '3900200192635', 'นางเอมอร ยกยอ', 1052500516, 'เตรียมอุดมศึกษาพัฒนาการเขลางค์นคร', 2, 'ชำนาญการ', 'พลศึกษา', 'กลุ่มสาระการเรียนรู้สุขศึกษาและพลศึกษา');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `quick_win_dashboard`
---
-
-CREATE TABLE `quick_win_dashboard` (
-  `teacher_id` varchar(13) CHARACTER SET utf8mb3 NOT NULL,
-  `full_name` varchar(301) CHARACTER SET utf8mb3 DEFAULT NULL,
-  `school_id` int DEFAULT NULL,
-  `school_name` varchar(255) CHARACTER SET utf8mb3 NOT NULL DEFAULT '',
-  `school_group_id` int DEFAULT NULL,
-  `position_rank` varchar(100) CHARACTER SET utf8mb3 NOT NULL DEFAULT '',
-  `original_learning_group` varchar(255) CHARACTER SET utf8mb3 DEFAULT NULL,
-  `core_learning_group` varchar(255) CHARACTER SET utf8mb3 DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `quick_win_dashboard`
---
-
-INSERT INTO `quick_win_dashboard` (`teacher_id`, `full_name`, `school_id`, `school_name`, `school_group_id`, `position_rank`, `original_learning_group`, `core_learning_group`) VALUES
-('3900200192635', 'นางเอมอร ยกยอ', 1052500516, 'เตรียมอุดมศึกษาพัฒนาการเขลางค์นคร', 2, 'ชำนาญการ', 'พลศึกษา', 'กลุ่มสาระการเรียนรู้สุขศึกษาและพลศึกษา');
+(4, '1510100024525', '1529900270499', '2025-12-03 09:02:05', 3, 'ผู้เรียนสามารถ เข้าถึงสิ่งเรียนและ เข้าใจบทเรียน / กิจกรรม'),
+(5, '3501400650364', '1529900270499', '2025-12-04 08:46:21', 4, '-');
 
 -- --------------------------------------------------------
 
@@ -764,17 +715,17 @@ CREATE TABLE `supervisor` (
 --
 
 INSERT INTO `supervisor` (`p_id`, `office_id`, `OfficeName`, `prefix_id`, `PrefixName`, `fname`, `lname`, `position`, `rank_id`, `RankName`) VALUES
-('1520590004267', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'พลอยไพลิน', 'นิลกรรณ์', 'ศึกษานิเทศก์', '13', 'คศ. 3'),
-('1529900191467', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ปัทมา', 'ฮูเซน', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
-('1529900192498', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ศิริมาศ', 'ราชคม', 'ศึกษานิเทศก์', '13', 'คศ. 3'),
-('1529900270499', '100', 'สพม.ลำปาง ลำพูน', 3, 'นาย', 'ฎิชมากรณ์', 'ยศวงค์เรือน', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
-('1560100030525', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ภัทรมาศ', 'ปินใจ', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
-('3210400040835', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ถิรมน', 'จิตปรีชาสกุล', 'ศึกษานิเทศก์', '13', 'คศ. 3'),
-('3501200441290', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'พิชญา', 'คำปัน', 'ศึกษานิเทศก์ (ผอ.กลุ่ม)', '13', 'คศ. 3'),
-('3509900553730', '100', 'สพม.ลำปาง ลำพูน', 5, 'นาง', 'ชนัดดา', 'ทิพย์เลิศ', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
-('3520100379974', '100', 'สพม.ลำปาง ลำพูน', 3, 'นาย', 'พีรวุทธิ์', 'สีดาบุตร', 'ศึกษานิเทศก์', '12', 'คศ. 2'),
-('3520900142120', '100', 'สพม.ลำปาง ลำพูน', 5, 'นาง', 'ศรีจันทรัตน์ ', 'กันทะวัง', 'ศึกษานิเทศก์', '13', 'คศ. 3'),
-('5520700016810', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'สุดาภรณ์', 'สืบสุติน', 'ศึกษานิเทศก์', '12', 'คศ. 2');
+('1520590004267', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'พลอยไพลิน', 'นิลกรรณ์', 'ศึกษานิเทศก์', '13', 'ครูชำนาญการพิเศษ'),
+('1529900191467', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ปัทมา', 'ฮูเซน', 'ศึกษานิเทศก์', '12', 'ครูชำนาญการ'),
+('1529900192498', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ศิริมาศ', 'ราชคม', 'ศึกษานิเทศก์', '13', 'ครูชำนาญการพิเศษ'),
+('1529900270499', '100', 'สพม.ลำปาง ลำพูน', 3, 'นาย', 'ฎิชมากรณ์', 'ยศวงค์เรือน', 'ศึกษานิเทศก์', '12', 'ครูชำนาญการ'),
+('1560100030525', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ภัทรมาศ', 'ปินใจ', 'ศึกษานิเทศก์', '12', 'ครูชำนาญการ'),
+('3210400040835', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'ถิรมน', 'จิตปรีชาสกุล', 'ศึกษานิเทศก์', '13', 'ครูชำนาญการพิเศษ'),
+('3501200441290', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'พิชญา', 'คำปัน', 'ศึกษานิเทศก์ (ผอ.กลุ่ม)', '13', 'ครูชำนาญการพิเศษ'),
+('3509900553730', '100', 'สพม.ลำปาง ลำพูน', 5, 'นาง', 'ชนัดดา', 'ทิพย์เลิศ', 'ศึกษานิเทศก์', '12', 'ครูชำนาญการ'),
+('3520100379974', '100', 'สพม.ลำปาง ลำพูน', 3, 'นาย', 'พีรวุทธิ์', 'สีดาบุตร', 'ศึกษานิเทศก์', '12', 'ครูชำนาญการ'),
+('3520900142120', '100', 'สพม.ลำปาง ลำพูน', 5, 'นาง', 'ศรีจันทรัตน์ ', 'กันทะวัง', 'ศึกษานิเทศก์', '13', 'ครูชำนาญการพิเศษ'),
+('5520700016810', '100', 'สพม.ลำปาง ลำพูน', 4, 'นางสาว', 'สุดาภรณ์', 'สืบสุติน', 'ศึกษานิเทศก์', '12', 'ครูชำนาญการ');
 
 -- --------------------------------------------------------
 
@@ -4117,7 +4068,7 @@ ALTER TABLE `teacher_core_assignments`
 -- AUTO_INCREMENT for table `quick_win`
 --
 ALTER TABLE `quick_win`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

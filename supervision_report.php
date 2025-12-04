@@ -307,8 +307,8 @@ $uploadedImages = [];
             <?php endif; ?>
 
             <div class="text-center mt-5 no-print">
-                <a href="index.php" class="btn btn-secondary me-2"><i class="fas fa-list-alt"></i> กลับไปหน้าประวัติ</a>
-                <button onclick="window.print()" class="btn btn-secondary"><i class="fas fa-print"></i> พิมพ์รายงาน</button>
+                <a href="index.php" class="btn btn-danger me-2"><i class="fas fa-list-alt"></i> กลับไปหน้าประวัติ</a>
+                <button onclick="window.print()" class="btn btn-primary"><i class="fas fa-print"></i> พิมพ์รายงาน</button>
             </div>
 
         </div>
