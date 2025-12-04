@@ -13,7 +13,8 @@ try {
     $query = "
         SELECT
             tca.core_learning_group AS learning_group, 
-            COUNT(DISTINCT ss.teacher_t_pid) AS supervised_teacher_count 
+            COUNT(DISTINCT ss.teacher_t_pid) AS supervised_teacher_count,
+            COUNT(ss.teacher_t_pid) AS total_supervision_count
         FROM
             supervision_sessions ss
         INNER JOIN
@@ -89,7 +90,9 @@ try {
                         <thead class="table-warning">
                             <tr class="text-center">
                                 <th scope="col">กลุ่มสาระการเรียนรู้</th>
-                                <th scope="col">จำนวนครู (คน)</th>
+                                <!-- ปิดหัวข้อตารางจำนวนครูที่นิเทศ "แบบไม่นับคนซ้ำ" -->
+                                <!-- <th scope="col">จำนวนครู (คน)</th> -->
+                                <th scope="col">จำนวนครั้งที่นิเทศ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -97,12 +100,14 @@ try {
                                 <?php foreach ($lg_supervision_data as $data): ?>
                                     <tr>
                                         <td><?php echo htmlspecialchars($data['learning_group']); ?></td>
-                                        <td class="text-center"><?php echo $data['supervised_teacher_count']; ?></td>
+                                        <!-- ปิดจำนวนครูที่นิเทศ "แบบไม่นับคนซ้ำ" -->
+                                        <!-- <td class="text-center"><?php echo $data['supervised_teacher_count']; ?></td> -->
+                                        <td class="text-center"><?php echo $data['total_supervision_count']; ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="2" class="text-center">ไม่พบข้อมูลการนิเทศ</td>
+                                    <td colspan="3" class="text-center">ไม่พบข้อมูลการนิเทศ</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>

@@ -234,7 +234,7 @@ $conn->close();
                                         <?php if ($row['session_type'] === 'normal'): ?>
                                             <!-- ✅ นิเทศปกติ -->
                                             <div class="btn-group" role="group">
-                                                <form method="POST" action="supervision_report.php" style="display:inline;">
+                                                <form method="POST" action="supervision_report.php" style="display:inline;" target="_blank">
                                                     <input type="hidden" name="s_pid" value="<?php echo htmlspecialchars($row['supervisor_p_id']); ?>">
                                                     <input type="hidden" name="t_pid" value="<?php echo htmlspecialchars($row['teacher_t_pid']); ?>">
                                                     <input type="hidden" name="sub_code" value="<?php echo htmlspecialchars($row['subject_code']); ?>">
@@ -257,7 +257,7 @@ $conn->close();
                                                             </button>
                                                         </form>
                                                     <?php else: ?>
-                                                        <form method="POST" action="certificate.php" style="display:inline;">
+                                                        <form method="POST" action="certificate.php" style="display:inline;" target="_blank">
                                                             <input type="hidden" name="s_pid" value="<?php echo htmlspecialchars($row['supervisor_p_id']); ?>">
                                                             <input type="hidden" name="t_pid" value="<?php echo htmlspecialchars($row['teacher_t_pid']); ?>">
                                                             <input type="hidden" name="sub_code" value="<?php echo htmlspecialchars($row['subject_code']); ?>">
@@ -285,7 +285,7 @@ $conn->close();
                                                             </button>
                                                         </form>
                                                     <?php else: ?>
-                                                        <form method="POST" action="certificate_quickwin.php" style="display:inline;">
+                                                        <form method="POST" action="certificate_quickwin.php" style="display:inline;" target="_blank">
                                                             <input type="hidden" name="t_id" value="<?php echo htmlspecialchars($row['qw_t_id']); ?>">
                                                             <input type="hidden" name="p_id" value="<?php echo htmlspecialchars($row['qw_p_id']); ?>">
                                                             <input type="hidden" name="date" value="<?php echo htmlspecialchars($row['qw_date']); ?>">
@@ -295,9 +295,14 @@ $conn->close();
                                                         </form>
                                                     <?php endif; ?>
                                                 <?php else: ?>
-                                                    <button type="button" class="btn btn-sm btn-secondary" disabled>
-                                                        <i class="fas fa-info-circle"></i> Quick Win
-                                                    </button>
+                                                    <form method="POST" action="quickwin_report.php" style="display:inline;" target="_blank">
+                                                        <input type="hidden" name="t_id" value="<?php echo htmlspecialchars($row['qw_t_id']); ?>">
+                                                        <input type="hidden" name="p_id" value="<?php echo htmlspecialchars($row['qw_p_id']); ?>">
+                                                        <input type="hidden" name="date" value="<?php echo htmlspecialchars($row['qw_date']); ?>">
+                                                        <button type="submit" class="btn btn-sm btn-info text-white">
+                                                            <i class="fas fa-file-alt"></i> รายงาน
+                                                        </button>
+                                                    </form>
                                                 <?php endif; ?>
                                             </div>
                                         <?php endif; ?>
