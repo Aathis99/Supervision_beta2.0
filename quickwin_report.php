@@ -48,7 +48,7 @@ $sql_info = "SELECT
 
 $stmt = $conn->prepare($sql_info);
 if (!$stmt) {
-    die("SQL Error (Info): " . $conn->error);
+    die("SQL Error: " . $conn->error);
 }
 $stmt->bind_param("sss", $p_id, $t_id, $date);
 $stmt->execute();
@@ -60,34 +60,7 @@ if (!$info) {
     die("ไม่พบข้อมูลการประเมินจุดเน้นสำหรับรหัสนี้");
 }
 
-// ========================
-// 2. ผลการประเมินความพึงพอใจ
-// แก้ไข: ใช้ตาราง satisfaction_questions และตัด ans.comment ออก
-// ========================
-$sql_answers = "SELECT
-                    q.question_text,
-                    ans.rating
-                FROM quickwin_satisfaction_answers ans
-                JOIN satisfaction_questions q ON ans.question_id = q.id
-                WHERE ans.p_id = ?
-                  AND ans.t_id = ?
-                  AND ans.supervision_date = ?
-                ORDER BY q.display_order";
-
-$stmt_ans = $conn->prepare($sql_answers);
-if (!$stmt_ans) {
-    // ดักจับ Error ถ้า prepare ไม่ผ่าน
-    die("SQL Error (Answers): " . $conn->error);
-}
-$stmt_ans->bind_param("sss", $p_id, $t_id, $date);
-$stmt_ans->execute();
-$result_ans = $stmt_ans->get_result();
-
-$satisfaction_data = [];
-while ($row = $result_ans->fetch_assoc()) {
-    $satisfaction_data[] = $row;
-}
-$stmt_ans->close();
+// ตัดส่วน Query ผลการประเมินความพึงพอใจออกตามที่ท่านต้องการ
 
 ?>
 <!DOCTYPE html>
@@ -143,61 +116,37 @@ $stmt_ans->close();
                 </div>
             </div>
 
-            <h5 class="header-title"><i class="fas fa-clipboard-list"></i> ข้อมูลการประเมิน</h5>
+            <h5 class="header-title"><i class="fas fa-clipboard-list"></i> ข้อมูลการประเมินจุดเน้น (Quick Win)</h5>
             <div class="info-box">
-                <div class="row">
-                    <div class="col-8"><strong>หัวข้อจุดเน้น:</strong> <?php echo $info['topic']; ?></div>
-                    <div class="col-4"><strong>วันที่:</strong> <?php echo date('d/m/Y', strtotime($info['supervision_date'])); ?></div>
-                </div>
-                <?php if (!empty($info['option_other'])): ?>
-                    <div class="row mt-2">
-                        <div class="col-12"><strong>รายละเอียดเพิ่มเติม:</strong> <?php echo htmlspecialchars($info['option_other']); ?></div>
+                <div class="row mb-2">
+                    <div class="col-12">
+                        <strong>หัวข้อจุดเน้นที่เลือก:</strong><br>
+                        <span class="text-primary fw-bold" style="font-size: 1.1rem;">
+                            <?php echo !empty($info['topic']) ? $info['topic'] : '- ไม่ระบุ -'; ?>
+                        </span>
                     </div>
-                <?php endif; ?>
-            </div>
-
-            <h5 class="header-title mt-4"><i class="fas fa-star"></i> ผลการประเมินความพึงพอใจ</h5>
-
-            <?php if (!empty($satisfaction_data)): ?>
-                <div class="table-responsive">
-                    <table class="table table-bordered table-kpi">
-                        <thead>
-                            <tr>
-                                <th style="width: 80%;">ประเด็นคำถาม</th>
-                                <th style="width: 20%; text-align: center;">ระดับ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($satisfaction_data as $item): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($item['question_text']); ?></td>
-                                    <td class="text-center">
-                                        <?php
-                                        $score = $item['rating'];
-                                        $class = 'bg-secondary';
-                                        if ($score == 5) $class = 'bg-success';
-                                        elseif ($score == 4) $class = 'bg-primary';
-                                        elseif ($score == 3) $class = 'bg-info text-dark';
-                                        elseif ($score == 2) $class = 'bg-warning text-dark';
-                                        elseif ($score == 1) $class = 'bg-danger';
-                                        ?>
-                                        <span class="badge <?php echo $class; ?>">
-                                            <?php echo htmlspecialchars($score); ?>
-                                        </span>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
                 </div>
-            <?php else: ?>
-                <div class="alert alert-info text-center">ยังไม่มีการประเมินความพึงพอใจสำหรับรายการนี้</div>
-            <?php endif; ?>
+
+                <!-- <?php if (!empty($info['option_other'])): ?>
+                    <div class="row mb-2">
+                        <div class="col-12">
+                            <strong>รายละเอียดเพิ่มเติม (Other Options):</strong><br>
+                            <?php echo nl2br(htmlspecialchars($info['option_other'])); ?>
+                        </div>
+                    </div>
+                <?php endif; ?> -->
+
+                <div class="row">
+                    <div class="col-12">
+                        <strong>วันที่ประเมิน:</strong> <?php echo date('d/m/Y', strtotime($info['supervision_date'])); ?>
+                    </div>
+                </div>
+            </div>
 
             <?php if (!empty($info['satisfaction_suggestion'])): ?>
                 <div class="card mt-4 border-info">
                     <div class="card-header bg-info text-dark fw-bold">
-                        <i class="fas fa-lightbulb"></i> ข้อเสนอแนะเพิ่มเติมจากผู้ประเมิน
+                        <i class="fas fa-lightbulb"></i> ข้อเสนอแนะ
                     </div>
                     <div class="card-body">
                         <p class="card-text">
@@ -210,11 +159,11 @@ $stmt_ans->close();
             <div class="text-center mt-5 no-print">
                 <form method="POST" action="session_details.php" style="display:inline;">
                     <input type="hidden" name="teacher_pid" value="<?php echo htmlspecialchars($t_id); ?>">
-                    <button type="submit" class="btn btn-secondary me-2">
+                    <button type="submit" class="btn btn-danger me-2">
                         <i class="fas fa-arrow-left"></i> ย้อนกลับ
                     </button>
                 </form>
-                <button onclick="window.print()" class="btn btn-secondary">
+                <button onclick="window.print()" class="btn btn-primary">
                     <i class="fas fa-print"></i> พิมพ์รายงาน
                 </button>
             </div>

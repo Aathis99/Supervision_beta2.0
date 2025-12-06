@@ -315,7 +315,7 @@ $conn->close();
             </div>
 
             <div class="text-center mt-4">
-                <a href="index.php" class="btn btn-secondary">
+                <a href="index.php" class="btn btn-danger">
                     <i class="fas fa-chevron-left"></i> กลับไปหน้าประวัติรวม
                 </a>
             </div>

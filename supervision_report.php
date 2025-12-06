@@ -357,7 +357,7 @@ $stmt_img->close();
                     <i class="fas fa-arrow-left"></i> ย้อนกลับ
                 </button>
             </form>
-            <button onclick="window.print()" class="btn btn-secondary">
+            <button onclick="window.print()" class="btn btn-primary">
                 <i class="fas fa-print"></i> พิมพ์รายงาน
             </button>
         </div>
